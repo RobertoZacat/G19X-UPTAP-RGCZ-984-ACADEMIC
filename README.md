@@ -3,7 +3,7 @@
 # Sistema de Evaluación Técnica Automatizada
 
 **Alumno:** Roberto Guadalupe Cruz Zacatenco · **Matrícula:** G19X-UPTAP-RGCZ-984
-**Institución:** [Tu universidad]
+**Institución:** Universidad Politécnica de Tapachula
 **Empresa:** PluriOne S.A. de C.V. (Develop Talent & Technology)
 
 ## Qué hace
