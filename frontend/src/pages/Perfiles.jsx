@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import { ui } from "../ui/tailwind";
 
 export default function Perfiles() {
   const [perfiles, setPerfiles] = useState([]);
@@ -69,43 +70,43 @@ export default function Perfiles() {
 
   return (
     <div>
-      <h1 style={styles.titulo}>Perfiles profesionales</h1>
-      <p style={styles.subtitulo}>
+      <h1 className={ui.pageTitle}>Perfiles profesionales</h1>
+      <p className={ui.pageSubtitle}>
         Los perfiles agrupan preguntas y exámenes por área (ej. Backend Junior, Frontend con React).
       </p>
 
-      <div className="page-grid">
-        <div style={styles.card}>
-          <h2 style={styles.cardTitulo}>
+      <div className={ui.grid}>
+        <div className={ui.card}>
+          <h2 className={ui.cardTitle}>
             {editandoId ? "Editar perfil" : "Nuevo perfil"}
           </h2>
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>
+          <form onSubmit={handleSubmit} className={ui.form}>
+            <label className={ui.label}>
               Nombre
               <input
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 required
-                style={styles.input}
+                className={ui.input}
                 placeholder="Backend Junior Python"
               />
             </label>
-            <label style={styles.label}>
+            <label className={ui.label}>
               Descripción
               <textarea
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                style={{ ...styles.input, minHeight: "80px", resize: "vertical" }}
+                className={`${ui.textarea} min-h-[80px]`}
                 placeholder="Evaluación para desarrolladores backend junior"
               />
             </label>
-            {error && <p style={styles.error}>{error}</p>}
-            <div style={styles.botonesForm}>
-              <button type="submit" disabled={cargando} style={styles.boton}>
+            {error && <p className="m-0 text-sm text-[#B3492E]">{error}</p>}
+            <div className="flex gap-2.5">
+              <button type="submit" disabled={cargando} className="flex-1 rounded-lg bg-[#2D5F4C] px-4 py-[11px] text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
                 {cargando ? "Guardando..." : editandoId ? "Guardar cambios" : "Crear perfil"}
               </button>
               {editandoId && (
-                <button type="button" onClick={limpiarFormulario} style={styles.botonSecundario}>
+                <button type="button" onClick={limpiarFormulario} className={ui.secondaryButton}>
                   Cancelar
                 </button>
               )}
@@ -113,29 +114,29 @@ export default function Perfiles() {
           </form>
         </div>
 
-        <div style={styles.card}>
-          <h2 style={styles.cardTitulo}>Perfiles existentes ({perfiles.length})</h2>
+        <div className={ui.card}>
+          <h2 className={ui.cardTitle}>Perfiles existentes ({perfiles.length})</h2>
 
           {cargandoLista ? (
-            <div style={styles.cargandoFila}>
-              <div className="spinner"></div>
-              <span style={styles.vacio}>Cargando perfiles...</span>
+            <div className={ui.loadingRow}>
+              <div className={ui.spinner} />
+              <span className={ui.emptyText}>Cargando perfiles...</span>
             </div>
           ) : perfiles.length === 0 ? (
-            <p style={styles.vacio}>Todavía no hay perfiles creados.</p>
+            <p className={ui.emptyText}>Todavía no hay perfiles creados.</p>
           ) : (
-            <ul style={styles.lista}>
+            <ul className="list-none p-0 m-0">
               {perfiles.map((p) => (
-                <li key={p.id} style={styles.item}>
-                  <div style={styles.itemContenido}>
-                    <span style={styles.itemNombre}>{p.nombre}</span>
-                    {p.descripcion && <p style={styles.itemDesc}>{p.descripcion}</p>}
+                <li key={p.id} className="flex items-start justify-between gap-3 border-b border-[#DCD9D0] py-3.5 last:border-b-0">
+                  <div className="flex-1">
+                    <span className="text-[15px] font-semibold text-[#1C1E1B]">{p.nombre}</span>
+                    {p.descripcion && <p className="m-0 mt-1 text-[13px] text-[#5C5B54]">{p.descripcion}</p>}
                   </div>
-                  <div style={styles.itemAcciones}>
-                    <button onClick={() => iniciarEdicion(p)} style={styles.accionBoton}>
+                  <div className="flex shrink-0 gap-2">
+                    <button onClick={() => iniciarEdicion(p)} className={ui.ghostButton}>
                       Editar
                     </button>
-                    <button onClick={() => handleEliminar(p)} style={styles.accionBotonEliminar}>
+                    <button onClick={() => handleEliminar(p)} className={ui.dangerButton}>
                       Eliminar
                     </button>
                   </div>
@@ -148,86 +149,3 @@ export default function Perfiles() {
     </div>
   );
 }
-
-const styles = {
-  titulo: { fontSize: "26px", fontWeight: 600, margin: "0 0 6px 0" },
-  subtitulo: { color: "var(--ink-soft)", fontSize: "14px", margin: "0 0 28px 0" },
-  card: {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: "12px",
-    padding: "24px",
-  },
-  cardTitulo: { fontSize: "16px", fontWeight: 600, margin: "0 0 18px 0" },
-  form: { display: "flex", flexDirection: "column", gap: "16px" },
-  label: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    fontSize: "13px",
-    color: "var(--ink-soft)",
-  },
-  input: {
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border)",
-    fontSize: "14px",
-    fontFamily: "inherit",
-  },
-  error: { color: "var(--error)", fontSize: "13px", margin: 0 },
-  botonesForm: { display: "flex", gap: "10px" },
-  boton: {
-    flex: 1,
-    padding: "11px",
-    borderRadius: "8px",
-    border: "none",
-    background: "var(--accent)",
-    color: "white",
-    fontWeight: 600,
-    fontSize: "14px",
-    cursor: "pointer",
-  },
-  botonSecundario: {
-    padding: "11px 16px",
-    borderRadius: "8px",
-    border: "1px solid var(--border)",
-    background: "none",
-    color: "var(--ink-soft)",
-    fontWeight: 600,
-    fontSize: "14px",
-    cursor: "pointer",
-  },
-  vacio: { color: "var(--ink-soft)", fontSize: "14px" },
-  cargandoFila: { display: "flex", alignItems: "center", gap: "10px" },
-  lista: { listStyle: "none", padding: 0, margin: 0 },
-  item: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "12px",
-    padding: "14px 0",
-    borderBottom: "1px solid var(--border)",
-  },
-  itemContenido: { flex: 1 },
-  itemNombre: { fontWeight: 600, fontSize: "15px" },
-  itemDesc: { color: "var(--ink-soft)", fontSize: "13px", margin: "4px 0 0 0" },
-  itemAcciones: { display: "flex", gap: "8px", flexShrink: 0 },
-  accionBoton: {
-    padding: "6px 12px",
-    borderRadius: "6px",
-    border: "1px solid var(--border)",
-    background: "none",
-    color: "var(--ink)",
-    fontSize: "12px",
-    cursor: "pointer",
-  },
-  accionBotonEliminar: {
-    padding: "6px 12px",
-    borderRadius: "6px",
-    border: "1px solid var(--error)",
-    background: "none",
-    color: "var(--error)",
-    fontSize: "12px",
-    cursor: "pointer",
-  },
-};

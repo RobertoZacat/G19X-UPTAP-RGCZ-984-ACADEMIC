@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import { ui } from "../ui/tailwind";
 
 export default function Examenes() {
   const [examenes, setExamenes] = useState([]);
@@ -128,24 +129,20 @@ export default function Examenes() {
 
   return (
     <div>
-      <h1 style={styles.titulo}>Exámenes</h1>
-      <p style={styles.subtitulo}>
-        Arma un examen por perfil y asígnale preguntas del banco.
-      </p>
+      <h1 className={ui.pageTitle}>Exámenes</h1>
+      <p className={ui.pageSubtitle}>Arma un examen por perfil y asígnale preguntas del banco.</p>
 
-      <div className="page-grid">
-        <div style={styles.card}>
-          <h2 style={styles.cardTitulo}>
-            {editandoId ? "Editar examen" : "Nuevo examen"}
-          </h2>
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>
+      <div className={ui.grid}>
+        <div className={ui.card}>
+          <h2 className={ui.cardTitle}>{editandoId ? "Editar examen" : "Nuevo examen"}</h2>
+          <form onSubmit={handleSubmit} className={ui.form}>
+            <label className={ui.label}>
               Perfil
               <select
                 value={perfilId}
                 onChange={(e) => setPerfilId(e.target.value)}
                 required
-                style={styles.input}
+                className={ui.select}
               >
                 <option value="" disabled>Selecciona un perfil</option>
                 {perfiles.map((p) => (
@@ -154,34 +151,34 @@ export default function Examenes() {
               </select>
             </label>
 
-            <label style={styles.label}>
+            <label className={ui.label}>
               Título del examen
               <input
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
                 required
-                style={styles.input}
+                className={ui.input}
                 placeholder="Examen Backend Junior Python"
               />
             </label>
 
-            <label style={styles.label}>
+            <label className={ui.label}>
               Tiempo límite (minutos)
               <input
                 type="number"
                 value={tiempoLimite}
                 onChange={(e) => setTiempoLimite(e.target.value)}
-                style={styles.input}
+                className={ui.input}
               />
             </label>
 
-            {error && <p style={styles.error}>{error}</p>}
-            <div style={styles.botonesForm}>
-              <button type="submit" disabled={cargando} style={styles.boton}>
+            {error && <p className="m-0 text-sm text-[#B3492E]">{error}</p>}
+            <div className="flex gap-2.5">
+              <button type="submit" disabled={cargando} className="flex-1 rounded-lg bg-[#2D5F4C] px-4 py-[11px] text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
                 {cargando ? "Guardando..." : editandoId ? "Guardar cambios" : "Crear examen"}
               </button>
               {editandoId && (
-                <button type="button" onClick={limpiarFormulario} style={styles.botonSecundario}>
+                <button type="button" onClick={limpiarFormulario} className={ui.secondaryButton}>
                   Cancelar
                 </button>
               )}
@@ -189,18 +186,18 @@ export default function Examenes() {
           </form>
         </div>
 
-        <div style={styles.card}>
-          <h2 style={styles.cardTitulo}>Exámenes existentes ({examenes.length})</h2>
+        <div className={ui.card}>
+          <h2 className={ui.cardTitle}>Exámenes existentes ({examenes.length})</h2>
 
           {cargandoLista ? (
-            <div style={styles.cargandoFila}>
-              <div className="spinner"></div>
-              <span style={styles.vacio}>Cargando exámenes...</span>
+            <div className={ui.loadingRow}>
+              <div className={ui.spinner} />
+              <span className={ui.emptyText}>Cargando exámenes...</span>
             </div>
           ) : examenes.length === 0 ? (
-            <p style={styles.vacio}>Todavía no hay exámenes creados.</p>
+            <p className={ui.emptyText}>Todavía no hay exámenes creados.</p>
           ) : (
-            <ul style={styles.lista}>
+            <ul className="list-none p-0 m-0 space-y-4">
               {examenes.map((ex) => {
                 const preguntasDelPerfil = preguntas.filter((p) => p.perfil_id === ex.perfil_id);
                 const preguntasAsignadas = preguntasPorExamen[ex.id] || [];
@@ -208,42 +205,37 @@ export default function Examenes() {
                 const disponibles = preguntasDelPerfil.filter((p) => !idsAsignadas.includes(p.id));
 
                 return (
-                  <li key={ex.id} style={styles.item}>
-                    <div style={styles.itemHeaderFila}>
-                      <button onClick={() => abrirExamen(ex)} style={styles.itemHeaderBoton}>
+                  <li key={ex.id} className="rounded-xl border border-[#DCD9D0] bg-white p-0">
+                    <div className="flex items-start justify-between gap-3 p-4">
+                      <button type="button" onClick={() => abrirExamen(ex)} className="flex flex-1 items-start justify-between gap-3 bg-transparent p-0 text-left font-inherit">
                         <div>
-                          <span style={styles.badge}>{nombrePerfil(ex.perfil_id)}</span>
-                          <p style={styles.itemTitulo}>{ex.titulo}</p>
-                          <p style={styles.itemMeta}>{ex.tiempo_limite_min} minutos</p>
+                          <span className={ui.pillAccent}>{nombrePerfil(ex.perfil_id)}</span>
+                          <p className="mt-2 mb-0.5 text-[15px] font-semibold text-[#1C1E1B]">{ex.titulo}</p>
+                          <p className="m-0 text-[13px] text-[#5C5B54]">{ex.tiempo_limite_min} minutos</p>
                         </div>
-                        <span>{examenExpandido === ex.id ? "−" : "+"}</span>
+                        <span className="pt-1 text-xl leading-none text-[#5C5B54]">{examenExpandido === ex.id ? "−" : "+"}</span>
                       </button>
-                      <div style={styles.itemAcciones}>
-                        <button onClick={() => iniciarEdicion(ex)} style={styles.accionBoton}>
+                      <div className="flex shrink-0 gap-2">
+                        <button type="button" onClick={() => iniciarEdicion(ex)} className={ui.ghostButton}>
                           Editar
                         </button>
-                        <button onClick={() => handleEliminarExamen(ex)} style={styles.accionBotonEliminar}>
+                        <button type="button" onClick={() => handleEliminarExamen(ex)} className={ui.dangerButton}>
                           Eliminar
                         </button>
                       </div>
                     </div>
 
                     {examenExpandido === ex.id && (
-                      <div style={styles.panelPreguntas}>
-                        <p style={styles.panelSubtitulo}>
-                          Preguntas asignadas ({preguntasAsignadas.length})
-                        </p>
+                      <div className="border-t border-[#DCD9D0] bg-[#F7F6F3] px-4 py-4">
+                        <p className="mb-2 text-sm font-semibold text-[#1C1E1B]">Preguntas asignadas ({preguntasAsignadas.length})</p>
                         {preguntasAsignadas.length === 0 ? (
-                          <p style={styles.vacio}>Sin preguntas todavía.</p>
+                          <p className={ui.emptyText}>Sin preguntas todavía.</p>
                         ) : (
-                          <ul style={styles.subLista}>
+                          <ul className="mb-3 list-none p-0 m-0">
                             {preguntasAsignadas.map((p) => (
-                              <li key={p.id} style={styles.subItem}>
-                                <span>{p.enunciado}</span>
-                                <button
-                                  onClick={() => quitarPregunta(ex, p)}
-                                  style={styles.quitarBoton}
-                                >
+                              <li key={p.id} className="flex items-center justify-between gap-3 border-b border-[#DCD9D0] py-2 text-sm last:border-b-0">
+                                <span className="text-[#1C1E1B]">{p.enunciado}</span>
+                                <button type="button" onClick={() => quitarPregunta(ex, p)} className="text-xs font-medium text-[#B3492E] transition hover:text-[#8F341E]">
                                   Quitar
                                 </button>
                               </li>
@@ -251,11 +243,11 @@ export default function Examenes() {
                           </ul>
                         )}
 
-                        <div style={styles.agregarFila}>
+                        <div className="flex gap-2">
                           <select
                             value={preguntaSeleccionada}
                             onChange={(e) => setPreguntaSeleccionada(e.target.value)}
-                            style={{ ...styles.input, flex: 1 }}
+                            className={`${ui.select} flex-1`}
                           >
                             <option value="" disabled>
                               {disponibles.length === 0 ? "No hay más preguntas de este perfil" : "Selecciona una pregunta"}
@@ -267,9 +259,10 @@ export default function Examenes() {
                             ))}
                           </select>
                           <button
+                            type="button"
                             onClick={() => agregarPregunta(ex)}
                             disabled={!preguntaSeleccionada}
-                            style={styles.botonChico}
+                            className="rounded-lg bg-[#2D5F4C] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70"
                           >
                             Agregar
                           </button>
@@ -286,145 +279,3 @@ export default function Examenes() {
     </div>
   );
 }
-
-const styles = {
-  titulo: { fontSize: "26px", fontWeight: 600, margin: "0 0 6px 0" },
-  subtitulo: { color: "var(--ink-soft)", fontSize: "14px", margin: "0 0 28px 0" },
-  card: {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: "12px",
-    padding: "24px",
-  },
-  cardTitulo: { fontSize: "16px", fontWeight: 600, margin: "0 0 18px 0" },
-  form: { display: "flex", flexDirection: "column", gap: "16px" },
-  label: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    fontSize: "13px",
-    color: "var(--ink-soft)",
-  },
-  input: {
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border)",
-    fontSize: "14px",
-    fontFamily: "inherit",
-  },
-  error: { color: "var(--error)", fontSize: "13px", margin: 0 },
-  botonesForm: { display: "flex", gap: "10px" },
-  boton: {
-    flex: 1,
-    padding: "11px",
-    borderRadius: "8px",
-    border: "none",
-    background: "var(--accent)",
-    color: "white",
-    fontWeight: 600,
-    fontSize: "14px",
-    cursor: "pointer",
-  },
-  botonSecundario: {
-    padding: "11px 16px",
-    borderRadius: "8px",
-    border: "1px solid var(--border)",
-    background: "none",
-    color: "var(--ink-soft)",
-    fontWeight: 600,
-    fontSize: "14px",
-    cursor: "pointer",
-  },
-  botonChico: {
-    padding: "10px 16px",
-    borderRadius: "8px",
-    border: "none",
-    background: "var(--accent)",
-    color: "white",
-    fontWeight: 600,
-    fontSize: "13px",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  },
-  vacio: { color: "var(--ink-soft)", fontSize: "14px" },
-  cargandoFila: { display: "flex", alignItems: "center", gap: "10px" },
-  lista: { listStyle: "none", padding: 0, margin: 0 },
-  item: {
-    borderBottom: "1px solid var(--border)",
-    padding: "16px 0",
-  },
-  itemHeaderFila: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: "12px",
-  },
-  itemHeaderBoton: {
-    flex: 1,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    background: "none",
-    border: "none",
-    padding: 0,
-    cursor: "pointer",
-    textAlign: "left",
-    fontFamily: "inherit",
-  },
-  badge: {
-    fontSize: "12px",
-    fontWeight: 600,
-    color: "var(--accent)",
-    background: "#EAF1EE",
-    padding: "3px 10px",
-    borderRadius: "999px",
-  },
-  itemTitulo: { fontSize: "15px", fontWeight: 600, margin: "8px 0 2px 0" },
-  itemMeta: { fontSize: "13px", color: "var(--ink-soft)", margin: 0 },
-  itemAcciones: { display: "flex", gap: "8px", flexShrink: 0 },
-  accionBoton: {
-    padding: "6px 12px",
-    borderRadius: "6px",
-    border: "1px solid var(--border)",
-    background: "none",
-    color: "var(--ink)",
-    fontSize: "12px",
-    cursor: "pointer",
-  },
-  accionBotonEliminar: {
-    padding: "6px 12px",
-    borderRadius: "6px",
-    border: "1px solid var(--error)",
-    background: "none",
-    color: "var(--error)",
-    fontSize: "12px",
-    cursor: "pointer",
-  },
-  panelPreguntas: {
-    background: "var(--bg)",
-    borderRadius: "8px",
-    padding: "16px",
-    marginTop: "16px",
-  },
-  panelSubtitulo: { fontSize: "13px", fontWeight: 600, margin: "0 0 10px 0" },
-  subLista: { listStyle: "none", padding: 0, margin: "0 0 14px 0" },
-  subItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "12px",
-    fontSize: "13px",
-    padding: "8px 0",
-    borderBottom: "1px solid var(--border)",
-  },
-  quitarBoton: {
-    background: "none",
-    border: "none",
-    color: "var(--error)",
-    fontSize: "12px",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    flexShrink: 0,
-  },
-  agregarFila: { display: "flex", gap: "8px" },
-};

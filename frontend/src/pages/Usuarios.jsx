@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import { ui } from "../ui/tailwind";
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -49,78 +50,78 @@ export default function Usuarios() {
 
   return (
     <div>
-      <h1 style={styles.titulo}>Usuarios del sistema</h1>
-      <p style={styles.subtitulo}>
+      <h1 className={ui.pageTitle}>Usuarios del sistema</h1>
+      <p className={ui.pageSubtitle}>
         Administradores y evaluadores que pueden acceder al panel.
       </p>
 
-      <div className="page-grid">
-        <div style={styles.card}>
-          <h2 style={styles.cardTitulo}>Nuevo usuario</h2>
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>
+      <div className={ui.grid}>
+        <div className={ui.card}>
+          <h2 className={ui.cardTitle}>Nuevo usuario</h2>
+          <form onSubmit={handleSubmit} className={ui.form}>
+            <label className={ui.label}>
               Nombre
               <input
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 required
-                style={styles.input}
+                className={ui.input}
               />
             </label>
-            <label style={styles.label}>
+            <label className={ui.label}>
               Email
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                style={styles.input}
+                className={ui.input}
               />
             </label>
-            <label style={styles.label}>
+            <label className={ui.label}>
               Contraseña
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={styles.input}
+                className={ui.input}
               />
             </label>
-            <label style={styles.label}>
+            <label className={ui.label}>
               Rol
-              <select value={rol} onChange={(e) => setRol(e.target.value)} style={styles.input}>
+              <select value={rol} onChange={(e) => setRol(e.target.value)} className={ui.select}>
                 <option value="evaluador">Evaluador</option>
                 <option value="admin">Administrador</option>
               </select>
             </label>
 
-            {error && <p style={styles.error}>{error}</p>}
-            {exito && <p style={styles.exito}>{exito}</p>}
+            {error && <p className="m-0 text-sm text-[#B3492E]">{error}</p>}
+            {exito && <p className="m-0 text-sm text-[#2D5F4C]">{exito}</p>}
 
-            <button type="submit" disabled={cargando} style={styles.boton}>
+            <button type="submit" disabled={cargando} className={ui.primaryButton}>
               {cargando ? "Creando..." : "Crear usuario"}
             </button>
           </form>
         </div>
 
-        <div style={styles.card}>
-          <h2 style={styles.cardTitulo}>Usuarios existentes ({usuarios.length})</h2>
+        <div className={ui.card}>
+          <h2 className={ui.cardTitle}>Usuarios existentes ({usuarios.length})</h2>
 
           {cargandoLista ? (
-            <div style={styles.cargandoFila}>
-              <div className="spinner"></div>
-              <span style={styles.vacio}>Cargando usuarios...</span>
+            <div className={ui.loadingRow}>
+              <div className={ui.spinner} />
+              <span className={ui.emptyText}>Cargando usuarios...</span>
             </div>
           ) : (
-            <ul style={styles.lista}>
+            <ul className="list-none p-0 m-0">
               {usuarios.map((u) => (
-                <li key={u.id} style={styles.item}>
+                <li key={u.id} className="flex items-center justify-between gap-3 border-b border-[#DCD9D0] py-3.5 last:border-b-0">
                   <div>
-                    <span style={styles.itemNombre}>{u.nombre}</span>
-                    <p style={styles.itemEmail}>{u.email}</p>
+                    <span className="text-[15px] font-semibold text-[#1C1E1B]">{u.nombre}</span>
+                    <p className="m-0 mt-0.5 text-[13px] text-[#5C5B54]">{u.email}</p>
                   </div>
-                  <span style={u.rol === "admin" ? styles.badgeAdmin : styles.badgeEvaluador}>
+                  <span className={u.rol === "admin" ? ui.pillAccent : ui.pillMuted}>
                     {u.rol}
                   </span>
                 </li>
@@ -132,70 +133,3 @@ export default function Usuarios() {
     </div>
   );
 }
-
-const styles = {
-  titulo: { fontSize: "26px", fontWeight: 600, margin: "0 0 6px 0" },
-  subtitulo: { color: "var(--ink-soft)", fontSize: "14px", margin: "0 0 28px 0" },
-  card: {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: "12px",
-    padding: "24px",
-  },
-  cardTitulo: { fontSize: "16px", fontWeight: 600, margin: "0 0 18px 0" },
-  form: { display: "flex", flexDirection: "column", gap: "16px" },
-  label: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    fontSize: "13px",
-    color: "var(--ink-soft)",
-  },
-  input: {
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border)",
-    fontSize: "14px",
-    fontFamily: "inherit",
-  },
-  error: { color: "var(--error)", fontSize: "13px", margin: 0 },
-  exito: { color: "var(--accent)", fontSize: "13px", margin: 0 },
-  boton: {
-    padding: "11px",
-    borderRadius: "8px",
-    border: "none",
-    background: "var(--accent)",
-    color: "white",
-    fontWeight: 600,
-    fontSize: "14px",
-    cursor: "pointer",
-  },
-  vacio: { color: "var(--ink-soft)", fontSize: "14px" },
-  cargandoFila: { display: "flex", alignItems: "center", gap: "10px" },
-  lista: { listStyle: "none", padding: 0, margin: 0 },
-  item: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "14px 0",
-    borderBottom: "1px solid var(--border)",
-  },
-  itemNombre: { fontWeight: 600, fontSize: "15px" },
-  itemEmail: { color: "var(--ink-soft)", fontSize: "13px", margin: "2px 0 0 0" },
-  badgeAdmin: {
-    fontSize: "12px",
-    fontWeight: 600,
-    color: "var(--accent)",
-    background: "#EAF1EE",
-    padding: "4px 12px",
-    borderRadius: "999px",
-  },
-  badgeEvaluador: {
-    fontSize: "12px",
-    fontWeight: 600,
-    color: "var(--ink-soft)",
-    background: "var(--bg)",
-    padding: "4px 12px",
-    borderRadius: "999px",
-  },
-};
