@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { ui } from "../ui/tailwind";
 
 export default function ResponderExamen() {
   const { intentoId } = useParams();
@@ -61,20 +62,20 @@ export default function ResponderExamen() {
   }
 
   if (cargandoInicial) {
-    return <div style={styles.wrapper}><p>Cargando examen...</p></div>;
+    return <div className="flex min-h-screen items-center justify-center bg-[#F7F6F3] px-6"><p className="text-sm text-[#5C5B54]">Cargando examen...</p></div>;
   }
 
   if (error && preguntas.length === 0) {
-    return <div style={styles.wrapper}><p style={styles.error}>{error}</p></div>;
+    return <div className="flex min-h-screen items-center justify-center bg-[#F7F6F3] px-6"><p className="text-sm text-[#B3492E]">{error}</p></div>;
   }
 
   if (!cargandoInicial && preguntas.length === 0 && !error) {
     return (
-      <div style={styles.wrapper}>
-        <div style={styles.contenedor}>
-          <p style={styles.eyebrow}>Examen no disponible</p>
-          <h1 style={styles.titulo}>Este examen todavía no tiene preguntas</h1>
-          <p style={styles.subtitulo}>
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F6F3] px-6 py-10">
+        <div className="max-w-[640px]">
+          <p className="mb-2 text-[13px] text-[#5C5B54]">Examen no disponible</p>
+          <h1 className="mb-1.5 text-[26px] font-semibold text-[#1C1E1B]">Este examen todavía no tiene preguntas</h1>
+          <p className="mb-0 text-sm text-[#5C5B54]">
             Contacta al equipo de reclutamiento, parece que el examen aún no está listo para presentarse.
           </p>
         </div>
@@ -83,85 +84,35 @@ export default function ResponderExamen() {
   }
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.contenedor}>
-        <p style={styles.eyebrow}>Examen en curso</p>
-        <h1 style={styles.titulo}>Responde cada pregunta</h1>
-        <p style={styles.subtitulo}>
+    <div className="flex min-h-screen justify-center bg-[#F7F6F3] px-6 py-10">
+      <div className="w-full max-w-[640px]">
+        <p className="mb-2 text-[13px] text-[#5C5B54]">Examen en curso</p>
+        <h1 className="mb-1.5 text-[26px] font-semibold text-[#1C1E1B]">Responde cada pregunta</h1>
+        <p className="mb-7 text-sm text-[#5C5B54]">
           Tienes {preguntas.length} pregunta{preguntas.length !== 1 ? "s" : ""} por responder.
         </p>
 
-        <div style={styles.lista}>
+        <div className="mb-6 flex flex-col gap-5">
           {preguntas.map((p, i) => (
-            <div key={p.id} style={styles.card}>
-              <p style={styles.numero}>Pregunta {i + 1}</p>
-              <p style={styles.enunciado}>{p.enunciado}</p>
+            <div key={p.id} className="rounded-xl border border-[#DCD9D0] bg-white p-6">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#2D5F4C]">Pregunta {i + 1}</p>
+              <p className="mb-4 text-[15px] leading-6 text-[#1C1E1B]">{p.enunciado}</p>
               <textarea
                 value={respuestas[p.id] || ""}
                 onChange={(e) => handleCambio(p.id, e.target.value)}
-                style={styles.textarea}
+                className={`${ui.textarea} min-h-[120px]`}
                 placeholder="Escribe tu respuesta aquí..."
               />
             </div>
           ))}
         </div>
 
-        {error && <p style={styles.error}>{error}</p>}
+        {error && <p className="mb-4 text-sm text-[#B3492E]">{error}</p>}
 
-        <button onClick={handleFinalizar} disabled={enviando} style={styles.boton}>
+        <button onClick={handleFinalizar} disabled={enviando} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
           {enviando ? "Enviando y calificando..." : "Finalizar examen"}
         </button>
       </div>
     </div>
   );
 }
-
-const styles = {
-  wrapper: {
-    minHeight: "100vh",
-    padding: "40px 24px",
-    display: "flex",
-    justifyContent: "center",
-  },
-  contenedor: { width: "100%", maxWidth: "640px" },
-  eyebrow: { color: "var(--ink-soft)", fontSize: "13px", margin: "0 0 8px 0" },
-  titulo: { fontSize: "26px", fontWeight: 600, margin: "0 0 6px 0" },
-  subtitulo: { color: "var(--ink-soft)", fontSize: "14px", margin: "0 0 28px 0" },
-  lista: { display: "flex", flexDirection: "column", gap: "20px", marginBottom: "24px" },
-  card: {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: "12px",
-    padding: "24px",
-  },
-  numero: {
-    fontSize: "12px",
-    fontWeight: 700,
-    color: "var(--accent)",
-    textTransform: "uppercase",
-    margin: "0 0 8px 0",
-  },
-  enunciado: { fontSize: "15px", lineHeight: 1.5, margin: "0 0 16px 0" },
-  textarea: {
-    width: "100%",
-    minHeight: "120px",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border)",
-    fontSize: "14px",
-    fontFamily: "inherit",
-    resize: "vertical",
-  },
-  error: { color: "var(--error)", fontSize: "14px", marginBottom: "16px" },
-  boton: {
-    width: "100%",
-    padding: "14px",
-    borderRadius: "8px",
-    border: "none",
-    background: "var(--accent)",
-    color: "white",
-    fontSize: "15px",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-};

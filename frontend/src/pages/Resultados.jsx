@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import { ui } from "../ui/tailwind";
 
 export default function Resultados() {
   const [resultados, setResultados] = useState([]);
@@ -24,40 +25,34 @@ export default function Resultados() {
 
   return (
     <div>
-      <h1 style={styles.titulo}>Resultados</h1>
-      <p style={styles.subtitulo}>
+      <h1 className="mb-1.5 text-[26px] font-semibold text-[#1C1E1B]">Resultados</h1>
+      <p className="mb-7 text-sm text-[#5C5B54]">
         Candidatos evaluados y calificados automáticamente por la IA.
       </p>
 
       {cargando ? (
-        <p style={styles.vacio}>Cargando...</p>
+        <p className="text-sm text-[#5C5B54]">Cargando...</p>
       ) : resultados.length === 0 ? (
-        <p style={styles.vacio}>Todavía no hay candidatos calificados.</p>
+        <p className="text-sm text-[#5C5B54]">Todavía no hay candidatos calificados.</p>
       ) : (
-        <div style={styles.lista}>
+        <div className="flex flex-col gap-4">
           {resultados.map((r) => (
-            <div key={r.intento_id} style={styles.card}>
-              <div style={styles.cardHeader}>
+            <div key={r.intento_id} className="rounded-xl border border-[#DCD9D0] bg-white p-6">
+              <div className="mb-3 flex items-start justify-between gap-4">
                 <div>
-                  <p style={styles.nombre}>{r.candidato_nombre}</p>
-                  <p style={styles.email}>{r.candidato_email}</p>
+                  <p className="m-0 text-base font-semibold text-[#1C1E1B]">{r.candidato_nombre}</p>
+                  <p className="m-0 mt-0.5 text-[13px] text-[#5C5B54]">{r.candidato_email}</p>
                 </div>
-                <div
-                  style={{
-                    ...styles.calificacion,
-                    color: colorCalificacion(r.calificacion_total),
-                    borderColor: colorCalificacion(r.calificacion_total),
-                  }}
-                >
+                <div className="rounded-full border px-3.5 py-1.5 text-[15px] font-bold whitespace-nowrap" style={{ color: colorCalificacion(r.calificacion_total), borderColor: colorCalificacion(r.calificacion_total) }}>
                   {r.calificacion_total.toFixed(1)} / 10
                 </div>
               </div>
 
-              <p style={styles.examen}>{r.examen_titulo}</p>
+              <p className="mb-4 text-sm text-[#5C5B54]">{r.examen_titulo}</p>
 
-              <div style={styles.retroBox}>
-                <p style={styles.retroLabel}>Retroalimentación de la IA</p>
-                <p style={styles.retroTexto}>{r.retroalimentacion_ia}</p>
+              <div className="rounded-lg bg-[#F7F6F3] px-4 py-3.5">
+                <p className="mb-1.5 text-xs font-semibold text-[#2D5F4C]">Retroalimentación de la IA</p>
+                <p className="m-0 whitespace-pre-line text-sm leading-6 text-[#1C1E1B]">{r.retroalimentacion_ia}</p>
               </div>
             </div>
           ))}
@@ -66,54 +61,3 @@ export default function Resultados() {
     </div>
   );
 }
-
-const styles = {
-  titulo: { fontSize: "26px", fontWeight: 600, margin: "0 0 6px 0" },
-  subtitulo: { color: "var(--ink-soft)", fontSize: "14px", margin: "0 0 28px 0" },
-  vacio: { color: "var(--ink-soft)", fontSize: "14px" },
-  lista: { display: "flex", flexDirection: "column", gap: "16px" },
-  card: {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: "12px",
-    padding: "24px",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "12px",
-  },
-  nombre: { fontSize: "16px", fontWeight: 600, margin: 0 },
-  email: { fontSize: "13px", color: "var(--ink-soft)", margin: "2px 0 0 0" },
-  calificacion: {
-    fontSize: "15px",
-    fontWeight: 700,
-    border: "1.5px solid",
-    borderRadius: "999px",
-    padding: "6px 14px",
-    whiteSpace: "nowrap",
-  },
-  examen: {
-    fontSize: "14px",
-    color: "var(--ink-soft)",
-    margin: "0 0 16px 0",
-  },
-  retroBox: {
-    background: "var(--bg)",
-    borderRadius: "8px",
-    padding: "14px 16px",
-  },
-  retroLabel: {
-    fontSize: "12px",
-    fontWeight: 600,
-    color: "var(--accent)",
-    margin: "0 0 6px 0",
-  },
-  retroTexto: {
-    fontSize: "14px",
-    lineHeight: 1.5,
-    margin: 0,
-    whiteSpace: "pre-line",
-  },
-};

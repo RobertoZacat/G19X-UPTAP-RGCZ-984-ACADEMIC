@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { ui } from "../ui/tailwind";
 
 export default function PresentarExamen() {
   const [examenes, setExamenes] = useState([]);
@@ -39,40 +40,40 @@ export default function PresentarExamen() {
   }
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.card}>
-        <p style={styles.eyebrow}>Sistema de Evaluación Técnica</p>
-        <h1 style={styles.titulo}>Presenta tu examen</h1>
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F6F3] p-6">
+      <div className="w-full max-w-[420px] rounded-xl border border-[#DCD9D0] bg-white p-10">
+        <p className="mb-2 text-[13px] text-[#5C5B54]">Sistema de Evaluación Técnica</p>
+        <h1 className="mb-7 text-[26px] font-semibold text-[#1C1E1B]">Presenta tu examen</h1>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-[18px]">
+          <label className="flex flex-col gap-1.5 text-sm text-[#5C5B54]">
             Nombre completo
             <input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               required
-              style={styles.input}
+              className={ui.input}
             />
           </label>
 
-          <label style={styles.label}>
+          <label className="flex flex-col gap-1.5 text-sm text-[#5C5B54]">
             Correo electrónico
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={styles.input}
+              className={ui.input}
             />
           </label>
 
-          <label style={styles.label}>
+          <label className="flex flex-col gap-1.5 text-sm text-[#5C5B54]">
             Examen a presentar
             <select
               value={examenId}
               onChange={(e) => setExamenId(e.target.value)}
               required
-              style={styles.input}
+              className={ui.select}
             >
               <option value="" disabled>Selecciona un examen</option>
               {examenes.map((ex) => (
@@ -81,9 +82,9 @@ export default function PresentarExamen() {
             </select>
           </label>
 
-          {error && <p style={styles.error}>{error}</p>}
+          {error && <p className="m-0 text-sm text-[#B3492E]">{error}</p>}
 
-          <button type="submit" disabled={cargando} style={styles.boton}>
+          <button type="submit" disabled={cargando} className={ui.primaryButton}>
             {cargando ? "Iniciando..." : "Comenzar examen"}
           </button>
         </form>
@@ -91,50 +92,3 @@ export default function PresentarExamen() {
     </div>
   );
 }
-
-const styles = {
-  wrapper: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "24px",
-  },
-  card: {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: "12px",
-    padding: "40px",
-    width: "100%",
-    maxWidth: "420px",
-  },
-  eyebrow: { color: "var(--ink-soft)", fontSize: "13px", margin: "0 0 8px 0" },
-  titulo: { fontSize: "26px", fontWeight: 600, margin: "0 0 28px 0" },
-  form: { display: "flex", flexDirection: "column", gap: "18px" },
-  label: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    fontSize: "14px",
-    color: "var(--ink-soft)",
-  },
-  input: {
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border)",
-    fontSize: "15px",
-    fontFamily: "inherit",
-  },
-  error: { color: "var(--error)", fontSize: "14px", margin: 0 },
-  boton: {
-    marginTop: "8px",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "none",
-    background: "var(--accent)",
-    color: "white",
-    fontSize: "15px",
-    fontWeight: 600,
-    cursor: "pointer",
-  },
-};

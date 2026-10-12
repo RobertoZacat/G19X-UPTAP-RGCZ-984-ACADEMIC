@@ -1,73 +1,35 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { ui } from "../ui/tailwind";
 
 export default function Layout() {
   const { logout } = useAuth();
 
-  const linkStyle = ({ isActive }) => ({
-    display: "block",
-    padding: "10px 16px",
-    borderRadius: "8px",
-    textDecoration: "none",
-    color: isActive ? "white" : "var(--ink)",
-    background: isActive ? "var(--accent)" : "transparent",
-    fontWeight: isActive ? 600 : 500,
-    fontSize: "14px",
-    marginBottom: "4px",
-  });
-
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      <aside style={styles.sidebar}>
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      <aside className="flex w-full flex-row justify-between border-b border-[#DCD9D0] bg-white px-4 py-6 lg:w-[220px] lg:flex-col lg:border-b-0 lg:border-r">
         <div>
-          <p style={styles.marca}>Eval Técnica</p>
+          <p className="mb-6 text-base font-bold text-[#2D5F4C]">Eval Técnica</p>
           <nav>
-            <NavLink to="/perfiles" style={linkStyle}>Perfiles</NavLink>
-            <NavLink to="/preguntas" style={linkStyle}>Preguntas</NavLink>
-            <NavLink to="/examenes" style={linkStyle}>Exámenes</NavLink>
-            <NavLink to="/resultados" style={linkStyle}>Resultados</NavLink>
-            <NavLink to="/usuarios" style={linkStyle}>Usuarios</NavLink>
+            <NavLink to="/perfiles" className={({ isActive }) => `${navLinkBase} ${isActive ? navLinkActive : navLinkIdle}`}>Perfiles</NavLink>
+            <NavLink to="/preguntas" className={({ isActive }) => `${navLinkBase} ${isActive ? navLinkActive : navLinkIdle}`}>Preguntas</NavLink>
+            <NavLink to="/examenes" className={({ isActive }) => `${navLinkBase} ${isActive ? navLinkActive : navLinkIdle}`}>Exámenes</NavLink>
+            <NavLink to="/resultados" className={({ isActive }) => `${navLinkBase} ${isActive ? navLinkActive : navLinkIdle}`}>Resultados</NavLink>
+            <NavLink to="/usuarios" className={({ isActive }) => `${navLinkBase} ${isActive ? navLinkActive : navLinkIdle}`}>Usuarios</NavLink>
           </nav>
         </div>
-        <button onClick={logout} style={styles.botonSalir}>
+        <button onClick={logout} className={ui.secondaryButton}>
           Cerrar sesión
         </button>
       </aside>
 
-      <main style={styles.contenido}>
+      <main className="flex-1 p-6 lg:p-10">
         <Outlet />
       </main>
     </div>
   );
 }
 
-const styles = {
-  sidebar: {
-    width: "220px",
-    background: "var(--surface)",
-    borderRight: "1px solid var(--border)",
-    padding: "24px 16px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-  marca: {
-    fontSize: "16px",
-    fontWeight: 700,
-    color: "var(--accent)",
-    marginBottom: "24px",
-  },
-  botonSalir: {
-    background: "none",
-    border: "1px solid var(--border)",
-    borderRadius: "8px",
-    padding: "10px",
-    fontSize: "14px",
-    color: "var(--ink-soft)",
-    cursor: "pointer",
-  },
-  contenido: {
-    flex: 1,
-    padding: "40px",
-  },
-};
+const navLinkBase = "mb-1 block rounded-lg px-4 py-2.5 text-sm font-medium no-underline transition";
+const navLinkActive = "bg-[#2D5F4C] text-white";
+const navLinkIdle = "text-[#1C1E1B] hover:bg-[#F7F6F3]";
