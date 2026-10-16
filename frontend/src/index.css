@@ -1,1 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+:root {
+  --bg: #F7F6F3;
+  --ink: #1C1E1B;
+  --ink-soft: #5C5B54;
+  --accent: #2D5F4C;
+  --accent-hover: #24493C;
+  --error: #B3492E;
+  --border: #DCD9D0;
+  --surface: #FFFFFF;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background-color: var(--bg);
+  color: var(--ink);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+input, button {
+  font-family: inherit;
+}
+
+/* ---------- Rejilla de las pantallas del panel ---------- */
+.page-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .page-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Indicador de carga ---------- */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: girar 0.6s linear infinite;
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Login ---------- */
+@media (max-width: 760px) {
+  .login-panel-marca {
+    display: none;
+  }
+}
+
+/* ---------- Cuadro de confirmación y avisos ---------- */
+.fb-overlay { animation: fb-fade 0.15s ease-out; }
+.fb-dialogo { animation: fb-pop 0.18s ease-out; }
+.fb-toast   { animation: fb-slide 0.2s ease-out; }
+
+@keyframes fb-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fb-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fb-slide {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-overlay, .fb-dialogo, .fb-toast { animation: none; }
+}

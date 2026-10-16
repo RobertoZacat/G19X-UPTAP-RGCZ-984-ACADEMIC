@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
+import { useConfirm, useToast } from "../components/Feedback";
 
 export default function Perfiles() {
   const [perfiles, setPerfiles] = useState([]);
@@ -10,6 +11,9 @@ export default function Perfiles() {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
   const [cargandoLista, setCargandoLista] = useState(true);
+
+  const confirmar = useConfirm();
+  const avisar = useToast();
 
   async function cargarPerfiles() {
     const res = await api.get("/perfiles");
@@ -56,15 +60,20 @@ export default function Perfiles() {
   }
 
   async function handleEliminar(perfil) {
-    if (!confirm(`¿Eliminar el perfil "${perfil.nombre}"? Esta acción no se puede deshacer.`)) {
-      return;
-    }
+    const ok = await confirmar({
+      titulo: "Eliminar perfil",
+      mensaje: `¿Eliminar el perfil "${perfil.nombre}"? Esta acción no se puede deshacer.`,
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
 
     try {
       await api.delete(`/perfiles/${perfil.id}`);
+      avisar("Perfil eliminado correctamente.", "exito");
       cargarPerfiles();
     } catch (err) {
-      alert(err.response?.data?.detail || "No se pudo eliminar el perfil.");
+      avisar(err.response?.data?.detail || "No se pudo eliminar el perfil.", "error");
     }
   }
 

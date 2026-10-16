@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
+import { useConfirm, useToast } from "../components/Feedback";
 
 export default function Examenes() {
   const [examenes, setExamenes] = useState([]);
   const [perfiles, setPerfiles] = useState([]);
   const [preguntas, setPreguntas] = useState([]);
   const [cargandoLista, setCargandoLista] = useState(true);
+
+  const confirmar = useConfirm();
+  const avisar = useToast();
 
   const [perfilId, setPerfilId] = useState("");
   const [titulo, setTitulo] = useState("");
@@ -84,13 +88,38 @@ export default function Examenes() {
   }
 
   async function handleEliminarExamen(ex) {
-    if (!confirm(`¿Eliminar el examen "${ex.titulo}"? Esta acción no se puede deshacer.`)) return;
+    const ok = await confirmar({
+      titulo: "Eliminar examen",
+      mensaje: `¿Eliminar el examen "${ex.titulo}"? Esta acción no se puede deshacer.`,
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
 
     try {
       await api.delete(`/examenes/${ex.id}`);
+      avisar("Examen eliminado correctamente.", "exito");
       cargarDatos();
     } catch (err) {
-      alert(err.response?.data?.detail || "No se pudo eliminar el examen.");
+      avisar(err.response?.data?.detail || "No se pudo eliminar el examen.", "error");
+    }
+  }
+
+  async function quitarPregunta(examen, pregunta) {
+    const ok = await confirmar({
+      titulo: "Quitar pregunta",
+      mensaje: "¿Quitar esta pregunta del examen? Seguirá en el banco de preguntas; solo se desvincula de este examen.",
+      textoConfirmar: "Quitar",
+      peligro: true,
+    });
+    if (!ok) return;
+
+    try {
+      await api.delete(`/examenes/${examen.id}/preguntas/${pregunta.id}`);
+      const res = await api.get(`/examenes/${examen.id}/preguntas`);
+      setPreguntasPorExamen((prev) => ({ ...prev, [examen.id]: res.data }));
+    } catch (err) {
+      avisar(err.response?.data?.detail || "No se pudo quitar la pregunta.", "error");
     }
   }
 

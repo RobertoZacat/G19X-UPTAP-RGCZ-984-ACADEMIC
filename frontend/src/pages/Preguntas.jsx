@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
+import { useConfirm, useToast } from "../components/Feedback";
 
 export default function Preguntas() {
   const [preguntas, setPreguntas] = useState([]);
   const [perfiles, setPerfiles] = useState([]);
   const [cargandoLista, setCargandoLista] = useState(true);
+
+  const confirmar = useConfirm();
+  const avisar = useToast();
 
   const [perfilId, setPerfilId] = useState("");
   const [tipo, setTipo] = useState("abierta");
@@ -89,13 +93,20 @@ export default function Preguntas() {
   }
 
   async function handleEliminar(pregunta) {
-    if (!confirm("¿Eliminar esta pregunta? Esta acción no se puede deshacer.")) return;
+    const ok = await confirmar({
+      titulo: "Eliminar pregunta",
+      mensaje: "¿Eliminar esta pregunta? Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar",
+      peligro: true,
+    });
+    if (!ok) return;
 
     try {
       await api.delete(`/preguntas/${pregunta.id}`);
+      avisar("Pregunta eliminada correctamente.", "exito");
       cargarDatos();
     } catch (err) {
-      alert(err.response?.data?.detail || "No se pudo eliminar la pregunta.");
+      avisar(err.response?.data?.detail || "No se pudo eliminar la pregunta.", "error");
     }
   }
 
