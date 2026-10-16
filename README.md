@@ -112,3 +112,9 @@ eval-tecnica/
 
 - Generación automática de preguntas con IA (actualmente las preguntas se crean manualmente)
 - Envío automático de resultados por correo al candidato
+
+## Uso de inteligencia artificial en el desarrollo
+
+Durante el desarrollo usé Claude (Anthropic) como asistente para resolver
+dudas, revisar código y redactar documentación. Las decisiones del
+proyecto, las pruebas y la integración final las realicé yo.
