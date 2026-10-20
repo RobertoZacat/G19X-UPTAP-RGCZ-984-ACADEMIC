@@ -157,3 +157,14 @@ class ResultadoDetalle(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ---------- Pregunta visible para el candidato (sin rúbrica) ----------
+class PreguntaPublica(BaseModel):
+    id: int
+    tipo: str
+    enunciado: str
+    opciones: Optional[List[str]] = None
+
+    class Config:
+        from_attributes = True

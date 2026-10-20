@@ -12,7 +12,12 @@ from app import models
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "cambia-esta-clave-en-produccion")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "Falta la variable de entorno SECRET_KEY. "
+        "Genera una con: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8  # 8 horas
 
