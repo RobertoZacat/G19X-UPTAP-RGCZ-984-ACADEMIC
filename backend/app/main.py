@@ -1,6 +1,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 from datetime import datetime
 
@@ -114,12 +115,19 @@ def crear_pregunta(
 
 
 @app.get("/preguntas", response_model=List[schemas.PreguntaOut])
-def listar_preguntas(db: Session = Depends(get_db)):
+def listar_preguntas(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(auth.obtener_usuario_actual)
+):
     return db.query(models.Pregunta).all()
 
 
 @app.get("/preguntas/{pregunta_id}", response_model=schemas.PreguntaOut)
-def obtener_pregunta(pregunta_id: int, db: Session = Depends(get_db)):
+def obtener_pregunta(
+    pregunta_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(auth.obtener_usuario_actual)
+):
     pregunta = db.query(models.Pregunta).filter(models.Pregunta.id == pregunta_id).first()
     if not pregunta:
         raise HTTPException(status_code=404, detail="Pregunta no encontrada")
@@ -172,7 +180,11 @@ def eliminar_pregunta(
 # ---------- Endpoints de Candidatos ----------
 
 @app.post("/candidatos", response_model=schemas.CandidatoOut)
-def crear_candidato(candidato: schemas.CandidatoCreate, db: Session = Depends(get_db)):
+def crear_candidato(
+    candidato: schemas.CandidatoCreate,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(auth.obtener_usuario_actual)
+):
     nuevo_candidato = models.Candidato(**candidato.model_dump())
     db.add(nuevo_candidato)
     db.commit()
@@ -181,7 +193,10 @@ def crear_candidato(candidato: schemas.CandidatoCreate, db: Session = Depends(ge
 
 
 @app.get("/candidatos", response_model=List[schemas.CandidatoOut])
-def listar_candidatos(db: Session = Depends(get_db)):
+def listar_candidatos(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(auth.obtener_usuario_actual)
+):
     return db.query(models.Candidato).all()
 
 
@@ -246,7 +261,7 @@ def asignar_pregunta_a_examen(
     return nueva_asignacion
 
 
-@app.get("/examenes/{examen_id}/preguntas", response_model=List[schemas.PreguntaOut])
+@app.get("/examenes/{examen_id}/preguntas", response_model=List[schemas.PreguntaPublica])
 def listar_preguntas_de_examen(examen_id: int, db: Session = Depends(get_db)):
     examen = db.query(models.Examen).filter(models.Examen.id == examen_id).first()
     if not examen:
@@ -365,9 +380,23 @@ def guardar_respuesta(
     if not intento:
         raise HTTPException(status_code=404, detail="Intento no encontrado")
 
+    if intento.estado == "calificado":
+        raise HTTPException(status_code=409, detail="Este intento ya fue calificado y no admite cambios")
+
     pregunta = db.query(models.Pregunta).filter(models.Pregunta.id == respuesta.pregunta_id).first()
     if not pregunta:
         raise HTTPException(status_code=404, detail="Pregunta no encontrada")
+
+    existente = db.query(models.Respuesta).filter(
+        models.Respuesta.intento_id == intento_id,
+        models.Respuesta.pregunta_id == respuesta.pregunta_id,
+    ).first()
+
+    if existente:
+        existente.respuesta_texto = respuesta.respuesta_texto
+        db.commit()
+        db.refresh(existente)
+        return existente
 
     nueva_respuesta = models.Respuesta(
         intento_id=intento_id,
@@ -381,7 +410,11 @@ def guardar_respuesta(
 
 
 @app.get("/intentos/{intento_id}/respuestas", response_model=List[schemas.RespuestaOut])
-def listar_respuestas_de_intento(intento_id: int, db: Session = Depends(get_db)):
+def listar_respuestas_de_intento(
+    intento_id: int,
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(auth.obtener_usuario_actual)
+):
     intento = db.query(models.Intento).filter(models.Intento.id == intento_id).first()
     if not intento:
         raise HTTPException(status_code=404, detail="Intento no encontrado")
@@ -396,6 +429,9 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
     intento = db.query(models.Intento).filter(models.Intento.id == intento_id).first()
     if not intento:
         raise HTTPException(status_code=404, detail="Intento no encontrado")
+
+    if intento.resultado is not None:
+        raise HTTPException(status_code=409, detail="Este intento ya fue calificado")
 
     respuestas = db.query(models.Respuesta).filter(models.Respuesta.intento_id == intento_id).all()
     if not respuestas:
@@ -416,22 +452,22 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
         calificaciones.append(resultado_ia["calificacion"])
         retroalimentaciones.append(f"Pregunta {pregunta.id}: {resultado_ia['retroalimentacion']}")
 
-    calificacion_promedio = sum(calificaciones) / len(calificaciones)
-    retroalimentacion_completa = "\n".join(retroalimentaciones)
-
     nuevo_resultado = models.Resultado(
         intento_id=intento_id,
-        calificacion_total=calificacion_promedio,
-        retroalimentacion_ia=retroalimentacion_completa
+        calificacion_total=sum(calificaciones) / len(calificaciones),
+        retroalimentacion_ia="\n".join(retroalimentaciones)
     )
-    db.add(nuevo_resultado)
-    db.commit()
-    db.refresh(nuevo_resultado)
-
     intento.estado = "calificado"
     intento.finalizado_en = datetime.utcnow()
-    db.commit()
+    db.add(nuevo_resultado)
 
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Este intento ya fue calificado")
+
+    db.refresh(nuevo_resultado)
     return nuevo_resultado
 
 
@@ -495,7 +531,10 @@ def obtener_mi_usuario(usuario_actual: models.Usuario = Depends(auth.obtener_usu
 # ---------- Endpoint de Resultados (vista general) ----------
 
 @app.get("/resultados", response_model=List[schemas.ResultadoDetalle])
-def listar_resultados(db: Session = Depends(get_db)):
+def listar_resultados(
+    db: Session = Depends(get_db),
+    usuario_actual: models.Usuario = Depends(auth.obtener_usuario_actual)
+):
     resultados = db.query(models.Resultado).all()
 
     detalles = []
