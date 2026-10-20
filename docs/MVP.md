@@ -36,6 +36,7 @@ La IA es una herramienta de apoyo: **el evaluador humano decide cómo y cuándo 
 - Roles `admin` y `evaluador`; solo el administrador crea y lista usuarios.
 - **Sin registro público:** el primer administrador se crea con el script `crear_admin.py`; los demás, desde la pantalla "Usuarios".
 - Cierre de sesión y rutas del panel protegidas.
+- Los endpoints que exponen datos de candidatos, resultados y rúbricas exigen sesión; la consulta que usa el candidato no entrega rúbricas.
 
 ### Perfiles
 - Crear, listar, editar y eliminar perfiles profesionales (p. ej. "Backend Junior Python").
@@ -55,6 +56,7 @@ La IA es una herramienta de apoyo: **el evaluador humano decide cómo y cuándo 
 - Acceso con nombre y correo, sin cuenta; si el correo ya existe, se reutiliza el candidato.
 - Pantalla con las preguntas del examen y un campo de respuesta por pregunta.
 - Validación de que todas las preguntas estén respondidas antes de finalizar.
+- Un intento no se puede calificar dos veces ni admite respuestas una vez calificado.
 - Mensaje claro cuando el examen aún no tiene preguntas.
 - Pantalla de confirmación al terminar (sin mostrar la calificación).
 
@@ -69,9 +71,9 @@ La IA es una herramienta de apoyo: **el evaluador humano decide cómo y cuándo 
 - Nota con código de color: verde (≥ 8), ámbar (≥ 6) y rojo (< 6).
 
 ### Interfaz (Frontend)
-- React + Vite con diseño propio (paleta verde bosque, tipografía Inter).
+- React + Vite + Tailwind CSS con diseño propio (paleta verde bosque, tipografía Inter).
 - Login de dos paneles con enlace directo para quien viene a presentar un examen.
-- Menú lateral, **diseño responsive**, estados de carga con indicador, confirmación antes de eliminar y mensajes de error del backend.
+- Menú lateral, **diseño responsive**, estados de carga con indicador, **cuadro de confirmación propio** antes de eliminar y **avisos flotantes** (éxito y error) con el mensaje del backend.
 - URL del backend configurable por variable de entorno (`VITE_API_URL`).
 
 ---
@@ -124,7 +126,10 @@ Calificación
 - La API key de Gemini solo reside en el backend.
 - ORM con consultas parametrizadas y validación de entradas con Pydantic; CORS limitado al frontend.
 - Restricciones de borrado para evitar datos huérfanos.
-- **Pendiente** (ver PRD, sección 4.22): proteger los endpoints de lectura, límite de intentos de login, cookie `HttpOnly`, defensa contra *prompt injection*, auditoría y aviso de privacidad.
+- Endpoints con datos de candidatos y rúbricas protegidos con sesión; rúbricas nunca enviadas al candidato.
+- `SECRET_KEY` obligatoria: sin ella el backend no arranca.
+- Protección contra doble calificación (validación y restricción de unicidad en base de datos).
+- **Pendiente** (ver PRD, sección 4.22): defensa contra *prompt injection* y manejo de errores de la IA, verificación de pertenencia del intento en el flujo del candidato, límite de intentos de login, cookie `HttpOnly`, auditoría y aviso de privacidad.
 
 ---
 
@@ -203,9 +208,12 @@ python crear_admin.py
 | Frontend: panel de administración | ✅ Completado |
 | Frontend: flujo público del candidato | ✅ Completado |
 | Pulido (CRUD completo, validaciones, variables de entorno, responsive) | ✅ Completado |
+| Correcciones de seguridad (endpoints protegidos, rúbricas ocultas, doble calificación, `SECRET_KEY`) | ✅ Completado |
 | Repositorio GitHub + README + script de base de datos | ✅ Completado |
 | Pruebas manuales de casos límite (examen sin preguntas) | ✅ Completado y corregido |
 | Pruebas manuales restantes (respuesta vacía, candidato repetido, recarga a mitad de examen) | 🔄 En curso |
+| Manejo de errores y defensa del prompt en la IA | ⏳ Pendiente |
+| Opción múltiple con calificación automática y tiempo límite del examen | ⏳ Pendiente |
 | Pruebas automatizadas (pytest, Playwright) y CI/CD | ⏳ Pendiente |
 | Documentación técnica y de usuario, plan de mantenimiento, capacitación y cierre | 🔄 En curso |
 
