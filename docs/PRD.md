@@ -159,7 +159,7 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 - FR-AUTH-03: Contraseñas con hash seguro (bcrypt); nunca en texto plano. [TEC]
 - FR-AUTH-04: Sesión mediante JWT (HS256) firmado con `SECRET_KEY` de variable de entorno; vigencia de 8 horas. [TEC]
 - FR-AUTH-05: Consulta del usuario autenticado (`GET /usuarios/yo`). [TEC]
-- FR-WEB-06: Confirmación antes de eliminar mediante un cuadro de diálogo propio, y avisos flotantes (toasts) para éxitos y errores del backend. [TEC]
+- FR-AUTH-06: Alta de usuarios (`POST /registro`) restringida al rol `admin`; rechaza correos ya registrados. [TEC]
 - FR-AUTH-07: Listado de usuarios (`GET /usuarios`) restringido al rol `admin`. [TEC]
 - FR-AUTH-08: Script `crear_admin.py` para crear el primer administrador directo en la base de datos. [TEC]
 - FR-AUTH-09: Cierre de sesión eliminando el token del navegador. [TEC]
@@ -168,18 +168,19 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 - FR-PER-01: Crear, listar y consultar perfiles (nombre y descripción). [TEC]
 - FR-PER-02: Editar un perfil. [TEC]
 - FR-PER-03: Eliminar un perfil solo si no tiene preguntas asociadas; en caso contrario, responder con el motivo. [TEC]
-- FR-PER-04: Crear, editar y eliminar requieren sesión; listar y consultar no. [TEC]
+- FR-PER-04: Crear, editar y eliminar requieren sesión; listar y consultar no (el candidato necesita ver los perfiles al elegir su examen). [TEC]
 
 ### Módulo Preguntas
 - FR-PRE-01: Crear, listar, consultar y editar preguntas. [TEC]
 - FR-PRE-02: Cada pregunta pertenece a un perfil y tiene tipo (`abierta` u `opcion_multiple`), enunciado, rúbrica y opciones. [TEC]
 - FR-PRE-03: Las opciones se almacenan como lista (JSON) y solo aplican al tipo opción múltiple. [TEC]
 - FR-PRE-04: Eliminar una pregunta solo si no está asignada a ningún examen. [TEC]
+- FR-PRE-05: Listar y consultar preguntas requiere sesión, porque incluyen la rúbrica de evaluación. [TEC]
 
 ### Módulo Exámenes
 - FR-EXA-01: Crear, listar, editar y eliminar exámenes (perfil, título y tiempo límite en minutos, 60 por defecto). [TEC]
 - FR-EXA-02: Asignar preguntas a un examen indicando su orden. [TEC]
-- FR-EXA-03: Listar las preguntas asignadas a un examen. [TEC]
+- FR-EXA-03: Listar las preguntas asignadas a un examen; esta consulta es pública (la usa el candidato) y **no incluye la rúbrica**. [TEC]
 - FR-EXA-04: Quitar una pregunta de un examen. [TEC]
 - FR-EXA-05: Eliminar un examen solo si ningún candidato lo ha presentado; al eliminarlo se borran sus asignaciones de preguntas. [TEC]
 - FR-EXA-06: La interfaz solo ofrece para asignar las preguntas del mismo perfil que el examen que aún no estén asignadas. [TEC]
@@ -187,10 +188,12 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 ### Módulo Candidato (acceso, intentos y respuestas)
 - FR-CAN-01: Acceso sin cuenta: `POST /candidatos/acceso` devuelve el candidato existente por correo o lo crea, sin duplicar. [TEC]
 - FR-CAN-02: Crear un intento (candidato + examen) con estado inicial `en_progreso` y fecha de inicio. [TEC]
-- FR-CAN-03: Guardar y listar las respuestas de un intento. [TEC]
+- FR-CAN-03: Guardar las respuestas de un intento (si ya existe una para la misma pregunta, se actualiza en lugar de duplicarse) y listarlas (esto último requiere sesión). [TEC]
 - FR-CAN-04: La interfaz exige responder todas las preguntas antes de finalizar. [TEC]
 - FR-CAN-05: Si el examen no tiene preguntas, mostrar un mensaje de "examen no disponible" en lugar del formulario. [TEC]
 - FR-CAN-06: Al finalizar, el candidato ve únicamente una confirmación de envío, sin su calificación. [TEC]
+- FR-CAN-07: Un intento ya calificado no admite nuevas respuestas (respuesta 409). [TEC]
+- FR-CAN-08: Listar y crear candidatos desde el panel requiere sesión; el candidato usa únicamente el acceso por correo. [TEC]
 
 ### Módulo Calificación con IA
 - FR-AI-01: Calificar un intento (`POST /intentos/{id}/calificar`): para cada respuesta, construir un prompt con enunciado, rúbrica y respuesta del candidato. [TEC]
@@ -200,9 +203,10 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 - FR-AI-05: La retroalimentación se guarda concatenada, una línea por pregunta. [TEC]
 - FR-AI-06: Al calificar, el intento pasa a estado `calificado` y se registra su fecha de finalización. [TEC]
 - FR-AI-07: Rechazar la calificación de un intento sin respuestas. [TEC]
+- FR-AI-08: Rechazar con 409 la calificación de un intento que ya tiene resultado; el resultado y el cambio de estado se guardan en una sola transacción. [TEC]
 
 ### Módulo Resultados
-- FR-RES-01: Listar resultados con candidato (nombre y correo), examen, calificación total, retroalimentación y fecha de finalización (`GET /resultados`). [TEC]
+- FR-RES-01: Listar resultados con candidato (nombre y correo), examen, calificación total, retroalimentación y fecha de finalización (`GET /resultados`); requiere sesión. [TEC]
 - FR-RES-02: Mostrar la nota con color según rango: verde (≥ 8), ámbar (≥ 6) y rojo (< 6). [TEC]
 
 ### Módulo Web (frontend)
@@ -211,13 +215,13 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 - FR-WEB-03: El token se guarda en el navegador y un interceptor lo envía en cada petición. [TEC]
 - FR-WEB-04: Layout con menú lateral y botón de cerrar sesión. [TEC]
 - FR-WEB-05: Diseño responsive (columnas que se apilan en pantallas angostas) y estados de carga con indicador. [TEC]
-- FR-WEB-06: Confirmación antes de eliminar y mensajes de error del backend visibles al usuario. [TEC]
+- FR-WEB-06: Confirmación antes de eliminar mediante un cuadro de diálogo propio, y avisos flotantes (toasts) para éxitos y errores del backend. [TEC]
 - FR-WEB-07: La URL del backend se configura mediante variable de entorno (`VITE_API_URL`). [TEC]
 - FR-WEB-08: Desde el login hay un enlace directo para quien viene a presentar un examen. [TEC]
 
 ## 4.11 Requerimientos no funcionales
 
-- **Seguridad:** secretos fuera del código (`.env`, `.env.example`); hash de contraseñas; JWT con expiración; control de rol en endpoints de administración; consultas a base de datos mediante ORM (parametrizadas); validación de entradas con Pydantic; CORS limitado al origen del frontend. [TEC]
+- **Seguridad:** secretos fuera del código (`.env`, `.env.example`); hash de contraseñas; JWT con expiración; control de rol en endpoints de administración; consultas a base de datos mediante ORM (parametrizadas); validación de entradas con Pydantic; CORS limitado al origen del frontend; datos de candidatos, resultados y rúbricas solo con sesión; `SECRET_KEY` obligatoria (sin valor por defecto). [TEC]
 - **Rendimiento:** la calificación llama a la IA una vez por pregunta, de forma secuencial; en desarrollo se midió ≈ 8 s para un examen de una pregunta, por lo que el tiempo crece con el número de preguntas. [TEC]
 - **Integridad de datos:** no se permite borrar perfiles, preguntas o exámenes con datos asociados; llaves foráneas y restricciones de unicidad en base de datos. [TEC]
 - **Mantenibilidad:** separación en módulos (`models`, `schemas`, `auth`, `ia`, `database`, `main`); la lógica de IA está aislada en un solo archivo, de modo que cambiar de proveedor impacta un solo punto. [TEC]
@@ -239,6 +243,9 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 - Un candidato se identifica por su correo; si ya existe, se reutiliza el registro. [TEC]
 - Un mismo candidato puede presentar un examen más de una vez; cada vez genera un intento nuevo. [TEC]
 - Un intento sin respuestas no se puede calificar. [TEC]
+- Un intento solo se califica una vez; un intento ya calificado no admite más respuestas. [TEC]
+- Si el candidato guarda otra vez la respuesta de la misma pregunta en un intento, se actualiza y no se duplica. [TEC]
+- La rúbrica nunca se entrega al candidato; solo la ve el personal autenticado. [TEC]
 - Solo se muestran para asignar a un examen las preguntas de su mismo perfil. [TEC]
 - La sesión vence a las 8 horas y exige iniciar sesión de nuevo. [TEC]
 
@@ -331,23 +338,24 @@ Infraestructura: Docker Compose (PostgreSQL), Git y GitHub. El backend y el fron
 | GET | `/usuarios` | Admin | Lista usuarios |
 | GET | `/perfiles`, `/perfiles/{id}` | Público | Lista / consulta perfiles |
 | POST, PUT, DELETE | `/perfiles`, `/perfiles/{id}` | Autenticado | Crea / edita / elimina perfiles |
-| GET | `/preguntas`, `/preguntas/{id}` | Público | Lista / consulta preguntas |
+| GET | `/preguntas`, `/preguntas/{id}` | Autenticado | Lista / consulta preguntas (incluye rúbrica) |
 | POST, PUT, DELETE | `/preguntas`, `/preguntas/{id}` | Autenticado | Crea / edita / elimina preguntas |
 | GET | `/examenes` | Público | Lista exámenes |
 | POST, PUT, DELETE | `/examenes`, `/examenes/{id}` | Autenticado | Crea / edita / elimina exámenes |
-| GET | `/examenes/{id}/preguntas` | Público | Preguntas de un examen |
+| GET | `/examenes/{id}/preguntas` | Público | Preguntas de un examen, **sin rúbrica** |
 | POST | `/examenes/{id}/preguntas` | Autenticado | Asigna una pregunta |
 | DELETE | `/examenes/{id}/preguntas/{pregunta_id}` | Autenticado | Quita una pregunta |
-| POST, GET | `/candidatos`, `/candidatos` | Público | Crea / lista candidatos |
+| POST, GET | `/candidatos`, `/candidatos` | Autenticado | Crea / lista candidatos |
 | POST | `/candidatos/acceso` | Público | Obtiene o crea candidato por correo |
 | POST | `/intentos` | Público | Crea un intento |
 | GET | `/intentos/{id}` | Público | Consulta un intento |
-| POST, GET | `/intentos/{id}/respuestas` | Público | Guarda / lista respuestas |
-| POST | `/intentos/{id}/calificar` | Público | Califica con IA y guarda el resultado |
-| GET | `/resultados` | Público | Lista resultados detallados |
+| POST | `/intentos/{id}/respuestas` | Público | Guarda o actualiza una respuesta (409 si el intento ya fue calificado) |
+| GET | `/intentos/{id}/respuestas` | Autenticado | Lista las respuestas de un intento |
+| POST | `/intentos/{id}/calificar` | Público | Califica con IA y guarda el resultado (409 si ya fue calificado) |
+| GET | `/resultados` | Autenticado | Lista resultados detallados |
 | GET | `/`, `/health` | Público | Estado de la API |
 
-> El acceso "Público" de algunos endpoints es una limitación conocida; ver sección 4.22.
+> Los endpoints «Público» son los que necesita el flujo del candidato (que no tiene cuenta), además del login y el estado de la API. Que esos endpoints no verifiquen la pertenencia del intento es una limitación conocida; ver sección 4.22.
 
 ## 4.16 Seguridad
 
@@ -362,6 +370,9 @@ Implementado:
 - Sin registro público; primer administrador creado por script en el servidor. [TEC]
 - Restricciones de borrado para evitar datos huérfanos. [TEC]
 - La API key de Gemini reside únicamente en el backend. [TEC]
+- Los endpoints que exponen datos de candidatos, resultados y rúbricas exigen sesión; la consulta que usa el candidato no entrega rúbricas. [TEC]
+- La `SECRET_KEY` es obligatoria: si falta en el entorno, el backend no arranca (no existe un valor por defecto). [TEC]
+- Un intento no puede calificarse dos veces; la restricción de unicidad de la base de datos respalda la validación. [TEC]
 
 Pendiente de implementar: ver sección 4.22.
 
@@ -414,6 +425,8 @@ Pendiente de implementar: ver sección 4.22.
 10. Un examen sin preguntas muestra un mensaje claro al candidato.
 11. Ningún secreto aparece en el repositorio ni en el frontend.
 12. El proyecto se instala y ejecuta en otra máquina siguiendo únicamente el README.
+13. Los resultados, la lista de candidatos y las rúbricas no son accesibles sin sesión, y el candidato no recibe rúbricas.
+14. Calificar dos veces un mismo intento responde 409 y no genera un segundo resultado.
 
 ## 4.20 Métricas / KPIs
 
@@ -437,19 +450,19 @@ Pendiente de implementar: ver sección 4.22.
 | FASE 6 | Frontend: flujo público del candidato | ✅ Completado |
 | FASE 7 | Pulido: CRUD completo, validaciones, variables de entorno, responsive, estados de carga | ✅ Completado |
 | FASE 8 | Repositorio GitHub, README, script de base de datos y `.env.example` | ✅ Completado |
+| FASE 9 | Correcciones de seguridad: endpoints protegidos, rúbricas ocultas al candidato, doble calificación y `SECRET_KEY` obligatoria | ✅ Completado |
 | QA | Pruebas de casos límite (examen sin preguntas ✅; respuesta vacía, candidato repetido y recarga a mitad de examen pendientes) | 🔄 En curso |
 | Documentación | Informe técnico, manual técnico y manual de usuario | 🔄 En curso |
 | Mantenimiento | Plan de mantenimiento y soporte multinivel | ⏳ Pendiente |
 | Cierre | Capacitación, acta y evaluación post-implementación | ⏳ Pendiente |
-| Post-MVP | Pruebas automatizadas, CI/CD, protección de endpoints de lectura, mejoras de IA y de experiencia | ⏳ Pendiente |
+| Post-MVP | Manejo de errores y defensa del prompt en la IA, opción múltiple con calificación automática, tiempo límite, pruebas automatizadas, CI/CD y mejoras de experiencia | ⏳ Pendiente |
 
 ## 4.22 Limitaciones conocidas y deuda técnica
 
 Se documentan de forma explícita para que el alcance real del MVP quede claro:
 
 **Seguridad**
-- Varios endpoints de lectura son públicos, incluido `GET /resultados`, y `GET /preguntas` expone las rúbricas. Debe protegerse con sesión.
-- Los endpoints del flujo del candidato (intentos, respuestas, calificar) no validan que quien llama sea el candidato dueño del intento; los identificadores son consecutivos.
+- Los endpoints públicos del flujo del candidato (crear intento, guardar respuestas, calificar) no validan que quien llama sea el candidato dueño del intento; los identificadores son consecutivos.
 - Sin límite de intentos de login, sin bloqueo temporal, sin refresh token y sin auditoría de accesos.
 - El token se guarda en el navegador (`localStorage`), lo que lo expone ante un ataque XSS; lo recomendable es una cookie `HttpOnly`.
 - Las respuestas del candidato se insertan directamente en el prompt de la IA, sin defensa contra *prompt injection* (un candidato podría intentar manipular la nota).
@@ -461,8 +474,7 @@ Se documentan de forma explícita para que el alcance real del MVP quede claro:
 - Las respuestas se guardan solo al finalizar; recargar la página a mitad del examen borra lo escrito.
 - La calificación llama a la IA una pregunta a la vez; en exámenes largos el candidato espera varios segundos.
 - Si la IA devuelve un formato inesperado, la calificación falla sin reintento automático.
-- Calificar dos veces el mismo intento no está controlado.
-- Se está investigando un error al enviar el examen en un segundo intento del mismo candidato.
+- Se corrigió la duplicación de respuestas al reintentar el envío; queda por confirmar con pruebas si el error del segundo intento de un mismo candidato desapareció.
 - El backend no valida que la pregunta asignada pertenezca al mismo perfil del examen, ni evita asignarla dos veces (la interfaz sí lo evita).
 - El menú muestra "Usuarios" a todos los roles aunque el backend rechace al evaluador.
 - Un candidato elige su examen de la lista completa de exámenes.
@@ -488,7 +500,6 @@ Se documentan de forma explícita para que el alcance real del MVP quede claro:
 | Playwright | ⏳ Pendiente |
 | Power BI | 🔁 Sustituido por el panel de resultados en React |
 | Scrum | ✅ Adaptado a un proyecto individual (backlog y ciclos semanales) |
-| *(no está en el documento fuente)* | ✅ Se agregó Tailwind CSS (v4) en el frontend [TEC] |
 
 ---
 
