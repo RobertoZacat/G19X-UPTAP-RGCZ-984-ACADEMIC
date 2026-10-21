@@ -3,6 +3,15 @@ import api from "../api/axios";
 import { ui } from "../ui/tailwind";
 import { useConfirm, useToast } from "../components/Feedback";
 
+function mensajeDeError(err, porDefecto) {
+  const detalle = err.response?.data?.detail;
+  if (typeof detalle === "string") return detalle;
+  if (Array.isArray(detalle) && detalle[0]?.msg) {
+    return detalle[0].msg.replace(/^Value error,\s*/, "");
+  }
+  return porDefecto;
+}
+
 export default function Preguntas() {
   const [preguntas, setPreguntas] = useState([]);
   const [perfiles, setPerfiles] = useState([]);
@@ -16,10 +25,15 @@ export default function Preguntas() {
   const [enunciado, setEnunciado] = useState("");
   const [rubrica, setRubrica] = useState("");
   const [opcionesTexto, setOpcionesTexto] = useState("");
+  const [respuestaCorrecta, setRespuestaCorrecta] = useState("");
   const [editandoId, setEditandoId] = useState(null);
 
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
+
+  const opcionesLista = opcionesTexto.split("\n").map((o) => o.trim()).filter(Boolean);
+  const correctaValida = opcionesLista.includes(respuestaCorrecta) ? respuestaCorrecta : "";
+  const esOpcionMultiple = tipo === "opcion_multiple";
 
   async function cargarDatos() {
     const [resPreguntas, resPerfiles] = await Promise.all([
@@ -46,6 +60,7 @@ export default function Preguntas() {
     setEnunciado("");
     setRubrica("");
     setOpcionesTexto("");
+    setRespuestaCorrecta("");
     setEditandoId(null);
     setError("");
   }
@@ -56,6 +71,7 @@ export default function Preguntas() {
     setEnunciado(p.enunciado);
     setRubrica(p.rubrica || "");
     setOpcionesTexto((p.opciones || []).join("\n"));
+    setRespuestaCorrecta(p.respuesta_correcta || "");
     setEditandoId(p.id);
     setError("");
   }
@@ -63,6 +79,18 @@ export default function Preguntas() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    if (esOpcionMultiple) {
+      if (opcionesLista.length < 2) {
+        setError("Escribe al menos 2 opciones, una por línea.");
+        return;
+      }
+      if (!correctaValida) {
+        setError("Elige cuál es la respuesta correcta.");
+        return;
+      }
+    }
+
     setCargando(true);
 
     try {
@@ -71,10 +99,8 @@ export default function Preguntas() {
         tipo,
         enunciado,
         rubrica,
-        opciones:
-          tipo === "opcion_multiple"
-            ? opcionesTexto.split("\n").map((o) => o.trim()).filter(Boolean)
-            : null,
+        opciones: esOpcionMultiple ? opcionesLista : null,
+        respuesta_correcta: esOpcionMultiple ? correctaValida : null,
       };
 
       if (editandoId) {
@@ -86,7 +112,7 @@ export default function Preguntas() {
       limpiarFormulario();
       cargarDatos();
     } catch (err) {
-      setError("No se pudo guardar la pregunta. Verifica los datos.");
+      setError(mensajeDeError(err, "No se pudo guardar la pregunta. Verifica los datos."));
     } finally {
       setCargando(false);
     }
@@ -114,7 +140,8 @@ export default function Preguntas() {
     <div>
       <h1 className={ui.pageTitle}>Banco de preguntas</h1>
       <p className={ui.pageSubtitle}>
-        Cada pregunta pertenece a un perfil y tiene una rúbrica que la IA usa para calificarla.
+        Cada pregunta pertenece a un perfil. Las abiertas se califican con la IA según su rúbrica;
+        las de opción múltiple se califican automáticamente con la respuesta correcta que indiques.
       </p>
 
       <div className={ui.grid}>
@@ -161,25 +188,50 @@ export default function Preguntas() {
               />
             </label>
 
-            {tipo === "opcion_multiple" && (
-              <label className={ui.label}>
-                Opciones (una por línea)
-                <textarea
-                  value={opcionesTexto}
-                  onChange={(e) => setOpcionesTexto(e.target.value)}
-                  className={`${ui.textarea} min-h-[80px]`}
-                  placeholder={"Opción A\nOpción B\nOpción C"}
-                />
-              </label>
+            {esOpcionMultiple && (
+              <>
+                <label className={ui.label}>
+                  Opciones (una por línea)
+                  <textarea
+                    value={opcionesTexto}
+                    onChange={(e) => setOpcionesTexto(e.target.value)}
+                    className={`${ui.textarea} min-h-[80px]`}
+                    placeholder={"Opción A\nOpción B\nOpción C"}
+                  />
+                </label>
+
+                <label className={ui.label}>
+                  Respuesta correcta
+                  <select
+                    value={correctaValida}
+                    onChange={(e) => setRespuestaCorrecta(e.target.value)}
+                    disabled={opcionesLista.length < 2}
+                    className={ui.select}
+                  >
+                    <option value="">
+                      {opcionesLista.length < 2
+                        ? "Primero escribe al menos 2 opciones"
+                        : "Selecciona la opción correcta"}
+                    </option>
+                    {opcionesLista.map((op) => (
+                      <option key={op} value={op}>{op}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
             )}
 
             <label className={ui.label}>
-              Rúbrica de evaluación
+              {esOpcionMultiple ? "Rúbrica o explicación (opcional)" : "Rúbrica de evaluación"}
               <textarea
                 value={rubrica}
                 onChange={(e) => setRubrica(e.target.value)}
                 className={`${ui.textarea} min-h-[80px]`}
-                placeholder="Qué debe incluir una buena respuesta..."
+                placeholder={
+                  esOpcionMultiple
+                    ? "Opcional: por qué esa es la respuesta correcta..."
+                    : "Qué debe incluir una buena respuesta..."
+                }
               />
             </label>
 
@@ -211,13 +263,36 @@ export default function Preguntas() {
             <ul className="list-none p-0 m-0">
               {preguntas.map((p) => (
                 <li key={p.id} className="border-b border-[#DCD9D0] py-4 last:border-b-0">
-                  <div className="mb-2 flex gap-2">
+                  <div className="mb-2 flex flex-wrap gap-2">
                     <span className={ui.pillAccent}>{nombrePerfil(p.perfil_id)}</span>
                     <span className={ui.pillMuted}>
                       {p.tipo === "opcion_multiple" ? "Opción múltiple" : "Abierta"}
                     </span>
+                    {p.tipo === "opcion_multiple" && !p.respuesta_correcta && (
+                      <span className="rounded-full bg-[#FBEFD5] px-2.5 py-[3px] text-xs font-semibold text-[#8A6100]">
+                        Sin respuesta correcta
+                      </span>
+                    )}
                   </div>
                   <p className="m-0 mb-2.5 text-sm leading-6 text-[#1C1E1B]">{p.enunciado}</p>
+
+                  {p.tipo === "opcion_multiple" && p.opciones?.length > 0 && (
+                    <ul className="m-0 mb-2.5 list-none space-y-1 p-0">
+                      {p.opciones.map((op) => {
+                        const esCorrecta = op === p.respuesta_correcta;
+                        return (
+                          <li
+                            key={op}
+                            className={`text-[13px] ${esCorrecta ? "font-semibold text-[#2D5F4C]" : "text-[#5C5B54]"}`}
+                          >
+                            {esCorrecta ? "✓ " : "• "}
+                            {op}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+
                   <div className="flex gap-2">
                     <button onClick={() => iniciarEdicion(p)} className={ui.ghostButton}>
                       Editar
