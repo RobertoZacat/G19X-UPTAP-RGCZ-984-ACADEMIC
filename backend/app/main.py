@@ -443,11 +443,15 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
     for respuesta in respuestas:
         pregunta = db.query(models.Pregunta).filter(models.Pregunta.id == respuesta.pregunta_id).first()
 
-        resultado_ia = ia.calificar_respuesta(
-            enunciado=pregunta.enunciado,
-            rubrica=pregunta.rubrica or "Evalúa la calidad y correctitud técnica de la respuesta.",
-            respuesta_candidato=respuesta.respuesta_texto
-        )
+        try:
+            resultado_ia = ia.calificar_respuesta(
+                enunciado=pregunta.enunciado,
+                rubrica=pregunta.rubrica or "Evalúa la calidad y correctitud técnica de la respuesta.",
+                respuesta_candidato=respuesta.respuesta_texto
+            )
+        except ia.IAError as e:
+            codigo = 503 if e.temporal else 502
+            raise HTTPException(status_code=codigo, detail=str(e))
 
         calificaciones.append(resultado_ia["calificacion"])
         retroalimentaciones.append(f"Pregunta {pregunta.id}: {resultado_ia['retroalimentacion']}")
