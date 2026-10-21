@@ -56,7 +56,14 @@ export default function ResponderExamen() {
       await api.post(`/intentos/${intentoId}/calificar`);
       navigate(`/examen/${intentoId}/completado`);
     } catch (err) {
-      setError("Hubo un problema al enviar tus respuestas. Intenta de nuevo.");
+      const estado = err.response?.status;
+      const detalle = err.response?.data?.detail;
+
+      if ((estado === 503 || estado === 502) && typeof detalle === "string") {
+        setError(`${detalle} Tus respuestas están guardadas: presiona «Finalizar examen» para reintentar.`);
+      } else {
+        setError("Hubo un problema al enviar tus respuestas. Intenta de nuevo.");
+      }
       setEnviando(false);
     }
   }
