@@ -6,7 +6,7 @@ from typing import List
 from datetime import datetime
 
 from app.database import get_db
-from app import models, schemas, ia, auth
+from app import models, schemas, ia, auth, calificacion_automatica
 
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -150,6 +150,7 @@ def actualizar_pregunta(
     pregunta.enunciado = datos.enunciado
     pregunta.rubrica = datos.rubrica
     pregunta.opciones = datos.opciones
+    pregunta.respuesta_correcta = datos.respuesta_correcta
     db.commit()
     db.refresh(pregunta)
     return pregunta
@@ -387,6 +388,11 @@ def guardar_respuesta(
     if not pregunta:
         raise HTTPException(status_code=404, detail="Pregunta no encontrada")
 
+    if pregunta.tipo == "opcion_multiple" and pregunta.opciones:
+        validas = {o.strip().casefold() for o in pregunta.opciones}
+        if respuesta.respuesta_texto.strip().casefold() not in validas:
+            raise HTTPException(status_code=400, detail="La opción elegida no es válida para esta pregunta")
+
     existente = db.query(models.Respuesta).filter(
         models.Respuesta.intento_id == intento_id,
         models.Respuesta.pregunta_id == respuesta.pregunta_id,
@@ -443,18 +449,25 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
     for respuesta in respuestas:
         pregunta = db.query(models.Pregunta).filter(models.Pregunta.id == respuesta.pregunta_id).first()
 
-        try:
-            resultado_ia = ia.calificar_respuesta(
-                enunciado=pregunta.enunciado,
-                rubrica=pregunta.rubrica or "Evalúa la calidad y correctitud técnica de la respuesta.",
-                respuesta_candidato=respuesta.respuesta_texto
+        if pregunta.tipo == "opcion_multiple" and pregunta.respuesta_correcta:
+            # Opción múltiple con respuesta correcta definida: se califica sin IA
+            resultado = calificacion_automatica.calificar_opcion_multiple(
+                correcta=pregunta.respuesta_correcta,
+                elegida=respuesta.respuesta_texto
             )
-        except ia.IAError as e:
-            codigo = 503 if e.temporal else 502
-            raise HTTPException(status_code=codigo, detail=str(e))
+        else:
+            try:
+                resultado = ia.calificar_respuesta(
+                    enunciado=pregunta.enunciado,
+                    rubrica=pregunta.rubrica or "Evalúa la calidad y correctitud técnica de la respuesta.",
+                    respuesta_candidato=respuesta.respuesta_texto
+                )
+            except ia.IAError as e:
+                codigo = 503 if e.temporal else 502
+                raise HTTPException(status_code=codigo, detail=str(e))
 
-        calificaciones.append(resultado_ia["calificacion"])
-        retroalimentaciones.append(f"Pregunta {pregunta.id}: {resultado_ia['retroalimentacion']}")
+        calificaciones.append(resultado["calificacion"])
+        retroalimentaciones.append(f"Pregunta {pregunta.id}: {resultado['retroalimentacion']}")
 
     nuevo_resultado = models.Resultado(
         intento_id=intento_id,

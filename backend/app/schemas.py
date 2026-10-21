@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -25,9 +25,32 @@ class PreguntaBase(BaseModel):
     enunciado: str
     rubrica: Optional[str] = None
     opciones: Optional[List[str]] = None
+    respuesta_correcta: Optional[str] = None  # solo para opción múltiple
 
 class PreguntaCreate(PreguntaBase):
-    pass
+    @model_validator(mode="after")
+    def validar_segun_tipo(self):
+        if self.tipo == "opcion_multiple":
+            opciones = [o.strip() for o in (self.opciones or []) if o and o.strip()]
+            if len(opciones) < 2:
+                raise ValueError("Una pregunta de opción múltiple necesita al menos 2 opciones.")
+
+            claves = [o.casefold() for o in opciones]
+            if len(set(claves)) != len(claves):
+                raise ValueError("Las opciones no deben repetirse.")
+
+            correcta = (self.respuesta_correcta or "").strip()
+            if not correcta:
+                raise ValueError("Indica cuál es la respuesta correcta.")
+            if correcta.casefold() not in claves:
+                raise ValueError("La respuesta correcta debe ser una de las opciones.")
+
+            self.opciones = opciones
+            self.respuesta_correcta = opciones[claves.index(correcta.casefold())]
+        else:
+            self.opciones = None
+            self.respuesta_correcta = None
+        return self
 
 class PreguntaOut(PreguntaBase):
     id: int
@@ -159,7 +182,7 @@ class ResultadoDetalle(BaseModel):
         from_attributes = True
 
 
-# ---------- Pregunta visible para el candidato (sin rúbrica) ----------
+# ---------- Pregunta visible para el candidato (sin rúbrica ni respuesta correcta) ----------
 class PreguntaPublica(BaseModel):
     id: int
     tipo: str

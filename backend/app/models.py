@@ -34,6 +34,7 @@ class Pregunta(Base):
     enunciado = Column(Text, nullable=False)
     rubrica = Column(Text)  # criterio de evaluación para la IA
     opciones = Column(JSON, nullable=True)  # solo para opción múltiple
+    respuesta_correcta = Column(Text, nullable=True)  # solo para opción múltiple; nunca se envía al candidato
 
     perfil = relationship("Perfil", back_populates="preguntas")
 

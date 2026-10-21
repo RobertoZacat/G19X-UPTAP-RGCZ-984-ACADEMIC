@@ -100,18 +100,55 @@ export default function ResponderExamen() {
         </p>
 
         <div className="mb-6 flex flex-col gap-5">
-          {preguntas.map((p, i) => (
-            <div key={p.id} className="rounded-xl border border-[#DCD9D0] bg-white p-6">
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#2D5F4C]">Pregunta {i + 1}</p>
-              <p className="mb-4 text-[15px] leading-6 text-[#1C1E1B]">{p.enunciado}</p>
-              <textarea
-                value={respuestas[p.id] || ""}
-                onChange={(e) => handleCambio(p.id, e.target.value)}
-                className={`${ui.textarea} min-h-[120px]`}
-                placeholder="Escribe tu respuesta aquí..."
-              />
-            </div>
-          ))}
+          {preguntas.map((p, i) => {
+            const esOpcionMultiple = p.tipo === "opcion_multiple" && p.opciones?.length > 0;
+
+            return (
+              <div key={p.id} className="rounded-xl border border-[#DCD9D0] bg-white p-6">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#2D5F4C]">Pregunta {i + 1}</p>
+                <p className="mb-4 text-[15px] leading-6 text-[#1C1E1B]">{p.enunciado}</p>
+
+                {esOpcionMultiple ? (
+                  <div
+                    className="flex flex-col gap-2.5"
+                    role="radiogroup"
+                    aria-label={`Opciones de la pregunta ${i + 1}`}
+                  >
+                    {p.opciones.map((op) => {
+                      const seleccionada = respuestas[p.id] === op;
+                      return (
+                        <label
+                          key={op}
+                          className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 text-sm transition ${
+                            seleccionada
+                              ? "border-[#2D5F4C] bg-[#EAF1EE]"
+                              : "border-[#DCD9D0] bg-white hover:bg-[#F7F6F3]"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`pregunta-${p.id}`}
+                            value={op}
+                            checked={seleccionada}
+                            onChange={() => handleCambio(p.id, op)}
+                            className="mt-0.5 accent-[#2D5F4C]"
+                          />
+                          <span className="leading-6 text-[#1C1E1B]">{op}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <textarea
+                    value={respuestas[p.id] || ""}
+                    onChange={(e) => handleCambio(p.id, e.target.value)}
+                    className={`${ui.textarea} min-h-[120px]`}
+                    placeholder="Escribe tu respuesta aquí..."
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {error && <p className="mb-4 text-sm text-[#B3492E]">{error}</p>}
