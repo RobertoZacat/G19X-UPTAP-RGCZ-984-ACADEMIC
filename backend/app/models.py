@@ -69,6 +69,7 @@ class Intento(Base):
     id = Column(Integer, primary_key=True, index=True)
     candidato_id = Column(Integer, ForeignKey("candidatos.id"))
     examen_id = Column(Integer, ForeignKey("examenes.id"))
+    token = Column(String, unique=True, nullable=False)
     iniciado_en = Column(DateTime, default=datetime.utcnow)
     finalizado_en = Column(DateTime, nullable=True)
     estado = Column(String, default="en_progreso")

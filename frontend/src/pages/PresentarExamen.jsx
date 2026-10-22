@@ -31,7 +31,7 @@ export default function PresentarExamen() {
         examen_id: Number(examenId),
       });
 
-      navigate(`/examen/${resIntento.data.id}`);
+      navigate(`/examen/${resIntento.data.id}?token=${resIntento.data.token}`);
     } catch (err) {
       setError("No se pudo iniciar el examen. Intenta de nuevo.");
     } finally {
