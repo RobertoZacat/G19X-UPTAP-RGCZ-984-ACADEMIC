@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
@@ -14,6 +14,7 @@ export default function ResponderExamen() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [tiempoRestante, setTiempoRestante] = useState(null);
+  const autoEnviado = useRef(false);
 
   useEffect(() => {
     async function cargar() {
@@ -57,18 +58,11 @@ export default function ResponderExamen() {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
   }
 
-  async function handleFinalizar() {
-    setError("");
-
-    const faltantes = preguntas.filter((p) => !respuestas[p.id]?.trim());
-    if (faltantes.length > 0) {
-      setError("Responde todas las preguntas antes de finalizar.");
-      return;
-    }
-
+  const enviarRespuestas = useCallback(async () => {
     setEnviando(true);
     try {
-      for (const pregunta of preguntas) {
+      const contestadas = preguntas.filter((p) => respuestas[p.id]?.trim());
+      for (const pregunta of contestadas) {
         await api.post(`/intentos/${intentoId}/respuestas`, {
           pregunta_id: pregunta.id,
           respuesta_texto: respuestas[pregunta.id],
@@ -88,6 +82,28 @@ export default function ResponderExamen() {
       }
       setEnviando(false);
     }
+  }, [preguntas, respuestas, intentoId, navigate]);
+
+  useEffect(() => {
+    if (tiempoRestante !== 0 || autoEnviado.current || enviando) return;
+
+    const hayRespuestas = preguntas.some((p) => respuestas[p.id]?.trim());
+    if (!hayRespuestas) return;
+
+    autoEnviado.current = true;
+    enviarRespuestas();
+  }, [tiempoRestante, preguntas, respuestas, enviando, enviarRespuestas]);
+
+  async function handleFinalizar() {
+    setError("");
+
+    const faltantes = preguntas.filter((p) => !respuestas[p.id]?.trim());
+    if (faltantes.length > 0) {
+      setError("Responde todas las preguntas antes de finalizar.");
+      return;
+    }
+
+    await enviarRespuestas();
   }
 
   if (cargandoInicial) {
