@@ -462,11 +462,28 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
     if not respuestas:
         raise HTTPException(status_code=400, detail="Este intento no tiene respuestas guardadas")
 
+    preguntas_examen = (
+        db.query(models.Pregunta)
+        .join(models.ExamenPregunta)
+        .filter(models.ExamenPregunta.examen_id == intento.examen_id)
+        .all()
+    )
+
+    if not preguntas_examen:
+        raise HTTPException(status_code=400, detail="Este examen no tiene preguntas asignadas")
+
+    respuestas_por_pregunta = {r.pregunta_id: r for r in respuestas}
+
     calificaciones = []
     retroalimentaciones = []
 
-    for respuesta in respuestas:
-        pregunta = db.query(models.Pregunta).filter(models.Pregunta.id == respuesta.pregunta_id).first()
+    for pregunta in preguntas_examen:
+        respuesta = respuestas_por_pregunta.get(pregunta.id)
+
+        if respuesta is None:
+            calificaciones.append(0.0)
+            retroalimentaciones.append(f"Pregunta {pregunta.id}: Sin respuesta (0 puntos).")
+            continue
 
         if pregunta.tipo == "opcion_multiple" and pregunta.respuesta_correcta:
             # Opción múltiple con respuesta correcta definida: se califica sin IA
@@ -490,7 +507,7 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
 
     nuevo_resultado = models.Resultado(
         intento_id=intento_id,
-        calificacion_total=sum(calificaciones) / len(calificaciones),
+        calificacion_total=sum(calificaciones) / len(preguntas_examen),
         retroalimentacion_ia="\n".join(retroalimentaciones)
     )
     intento.estado = "calificado"
