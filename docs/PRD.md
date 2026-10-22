@@ -172,7 +172,7 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 
 ### Módulo Preguntas
 - FR-PRE-01: Crear, listar, consultar y editar preguntas. [TEC]
-- FR-PRE-02: Cada pregunta pertenece a un perfil y tiene tipo (`abierta` u `opcion_multiple`), enunciado, rúbrica y opciones. [TEC]
+- FR-PRE-02: Cada pregunta pertenece a un perfil y tiene tipo (`abierta` u `opcion_multiple`), enunciado, rúbrica y opciones; las de opción múltiple guardan además la respuesta correcta. [TEC]
 - FR-PRE-03: Las opciones se almacenan como lista (JSON) y solo aplican al tipo opción múltiple. [TEC]
 - FR-PRE-04: Eliminar una pregunta solo si no está asignada a ningún examen. [TEC]
 - FR-PRE-05: Listar y consultar preguntas requiere sesión, porque incluyen la rúbrica de evaluación. [TEC]
@@ -204,6 +204,7 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 - FR-AI-06: Al calificar, el intento pasa a estado `calificado` y se registra su fecha de finalización. [TEC]
 - FR-AI-07: Rechazar la calificación de un intento sin respuestas. [TEC]
 - FR-AI-08: Rechazar con 409 la calificación de un intento que ya tiene resultado; el resultado y el cambio de estado se guardan en una sola transacción. [TEC]
+- FR-AI-09: Las preguntas de opción múltiple con respuesta correcta se califican automáticamente (10 si acierta, 0 si no), sin llamar a la IA. [TEC]
 
 ### Módulo Resultados
 - FR-RES-01: Listar resultados con candidato (nombre y correo), examen, calificación total, retroalimentación y fecha de finalización (`GET /resultados`); requiere sesión. [TEC]
@@ -373,6 +374,7 @@ Implementado:
 - Los endpoints que exponen datos de candidatos, resultados y rúbricas exigen sesión; la consulta que usa el candidato no entrega rúbricas. [TEC]
 - La `SECRET_KEY` es obligatoria: si falta en el entorno, el backend no arranca (no existe un valor por defecto). [TEC]
 - Un intento no puede calificarse dos veces; la restricción de unicidad de la base de datos respalda la validación. [TEC]
+- Defensa contra *prompt injection*: la respuesta del candidato se delimita con etiquetas y se limpia antes de insertarse en el prompt. [TEC]
 
 Pendiente de implementar: ver sección 4.22.
 
@@ -406,6 +408,9 @@ Pendiente de implementar: ver sección 4.22.
 - **Sustitución de Azure OpenAI:** el documento fuente propone Azure OpenAI [DOC]; se usó Gemini por disponibilidad de acceso y costo durante el desarrollo, y porque su capa gratuita permite desarrollar y probar sin tarjeta. [TEC]
 - **Enfoque:** evaluación por rúbrica. Para cada respuesta se arma un prompt con rol de "evaluador técnico experto", la pregunta, la rúbrica y la respuesta del candidato. [TEC]
 - **Contrato de salida:** la IA debe responder solo con JSON `{"calificacion": <0-10>, "retroalimentacion": "<texto breve>"}`; el sistema limpia envolturas de markdown antes de interpretarlo. [TEC]
+- **Defensa del prompt:** la respuesta del candidato se delimita con etiquetas `<respuesta_candidato>` y se le indica al modelo que todo lo que esté dentro es texto a evaluar, nunca instrucciones; además se recorta el texto y se eliminan las etiquetas que intenten cerrar el delimitador. [TEC]
+- **Validación de la salida:** se extrae el JSON, se rechazan valores no numéricos o no finitos (NaN, infinito) y la nota se limita al rango 0–10. [TEC]
+- **Reintentos y modelo de respaldo:** ante fallas pasajeras (saturación, 429/5xx) se reintenta hasta 3 veces por modelo y, si está configurado `GEMINI_MODEL_RESPALDO`, se usa como alternativa. Las fallas permanentes y temporales se distinguen con `IAError` y llegan al candidato con un mensaje claro. [TEC]
 - **Agregación:** calificación total = promedio de las notas por pregunta; retroalimentación = una línea por pregunta. [TEC]
 - **Aislamiento:** toda la integración vive en `ia.py` (función `calificar_respuesta`), por lo que cambiar de proveedor implica modificar un solo archivo. [TEC]
 - **Nota sobre modelos:** los nombres de modelos de Gemini se retiran con el tiempo (el modelo `gemini-2.0-flash` ya no está disponible); el nombre del modelo debe revisarse periódicamente. [TEC]
@@ -455,7 +460,7 @@ Pendiente de implementar: ver sección 4.22.
 | Documentación | Informe técnico, manual técnico y manual de usuario | 🔄 En curso |
 | Mantenimiento | Plan de mantenimiento y soporte multinivel | ⏳ Pendiente |
 | Cierre | Capacitación, acta y evaluación post-implementación | ⏳ Pendiente |
-| Post-MVP | Manejo de errores y defensa del prompt en la IA, opción múltiple con calificación automática, tiempo límite, pruebas automatizadas, CI/CD y mejoras de experiencia | ⏳ Pendiente |
+| Post-MVP | Tiempo límite del examen, pruebas automatizadas, CI/CD y mejoras de experiencia | ⏳ Pendiente |
 
 ## 4.22 Limitaciones conocidas y deuda técnica
 
@@ -465,15 +470,12 @@ Se documentan de forma explícita para que el alcance real del MVP quede claro:
 - Los endpoints públicos del flujo del candidato (crear intento, guardar respuestas, calificar) no validan que quien llama sea el candidato dueño del intento; los identificadores son consecutivos.
 - Sin límite de intentos de login, sin bloqueo temporal, sin refresh token y sin auditoría de accesos.
 - El token se guarda en el navegador (`localStorage`), lo que lo expone ante un ataque XSS; lo recomendable es una cookie `HttpOnly`.
-- Las respuestas del candidato se insertan directamente en el prompt de la IA, sin defensa contra *prompt injection* (un candidato podría intentar manipular la nota).
 - Falta aviso de privacidad y consentimiento del candidato sobre el tratamiento de sus datos personales.
 
 **Funcionalidad**
-- Las preguntas de opción múltiple se pueden registrar con sus opciones, pero la pantalla del candidato muestra un cuadro de texto libre para todas las preguntas, y la calificación pasa siempre por la IA con la rúbrica (no hay respuesta correcta predefinida).
 - El tiempo límite del examen se guarda pero no se aplica ni se muestra al candidato.
 - Las respuestas se guardan solo al finalizar; recargar la página a mitad del examen borra lo escrito.
 - La calificación llama a la IA una pregunta a la vez; en exámenes largos el candidato espera varios segundos.
-- Si la IA devuelve un formato inesperado, la calificación falla sin reintento automático.
 - Se corrigió la duplicación de respuestas al reintentar el envío; queda por confirmar con pruebas si el error del segundo intento de un mismo candidato desapareció.
 - El backend no valida que la pregunta asignada pertenezca al mismo perfil del examen, ni evita asignarla dos veces (la interfaz sí lo evita).
 - El menú muestra "Usuarios" a todos los roles aunque el backend rechace al evaluador.
