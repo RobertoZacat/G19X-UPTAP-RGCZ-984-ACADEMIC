@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
 
 export default function ResponderExamen() {
   const { intentoId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
 
   const [intento, setIntento] = useState(null);
   const [preguntas, setPreguntas] = useState([]);
@@ -19,7 +21,7 @@ export default function ResponderExamen() {
   useEffect(() => {
     async function cargar() {
       try {
-        const resIntento = await api.get(`/intentos/${intentoId}`);
+        const resIntento = await api.get(`/intentos/${intentoId}?token=${token}`);
         setIntento(resIntento.data);
 
         const resPreguntas = await api.get(`/examenes/${resIntento.data.examen_id}/preguntas`);
@@ -31,7 +33,7 @@ export default function ResponderExamen() {
       }
     }
     cargar();
-  }, [intentoId]);
+  }, [intentoId, token]);
 
   useEffect(() => {
     if (!intento?.iniciado_en || !intento?.tiempo_limite_min) return;
@@ -63,13 +65,13 @@ export default function ResponderExamen() {
     try {
       const contestadas = preguntas.filter((p) => respuestas[p.id]?.trim());
       for (const pregunta of contestadas) {
-        await api.post(`/intentos/${intentoId}/respuestas`, {
+        await api.post(`/intentos/${intentoId}/respuestas?token=${token}`, {
           pregunta_id: pregunta.id,
           respuesta_texto: respuestas[pregunta.id],
         });
       }
 
-      await api.post(`/intentos/${intentoId}/calificar`);
+      await api.post(`/intentos/${intentoId}/calificar?token=${token}`);
       navigate(`/examen/${intentoId}/completado`);
     } catch (err) {
       const estado = err.response?.status;
@@ -82,7 +84,7 @@ export default function ResponderExamen() {
       }
       setEnviando(false);
     }
-  }, [preguntas, respuestas, intentoId, navigate]);
+  }, [preguntas, respuestas, intentoId, navigate, token]);
 
   useEffect(() => {
     if (tiempoRestante !== 0 || autoEnviado.current || enviando) return;

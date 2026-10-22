@@ -114,6 +114,7 @@ CREATE TABLE public.intentos (
     id integer NOT NULL,
     candidato_id integer,
     examen_id integer,
+    token character varying NOT NULL,
     iniciado_en timestamp without time zone,
     finalizado_en timestamp without time zone,
     estado character varying
@@ -424,20 +425,20 @@ COPY public.examenes (id, perfil_id, titulo, tiempo_limite_min) FROM stdin;
 -- Data for Name: intentos; Type: TABLE DATA; Schema: public; Owner: eval_user
 --
 
-COPY public.intentos (id, candidato_id, examen_id, iniciado_en, finalizado_en, estado) FROM stdin;
-1	1	1	2026-09-12 02:14:24.637569	2026-09-12 02:34:48.518256	calificado
-2	2	1	2026-09-27 20:43:30.050048	2026-09-27 20:47:00.46219	calificado
-3	3	2	2026-10-06 01:17:26.846461	\N	en_progreso
-4	3	1	2026-10-06 01:52:05.858998	2026-10-06 01:52:59.390472	calificado
-5	3	1	2026-10-06 01:53:44.422212	\N	en_progreso
-6	4	3	2026-10-15 00:20:51.476	\N	en_progreso
-7	5	2	2026-10-15 01:23:48.175538	\N	en_progreso
-8	5	1	2026-10-15 20:00:08.816486	2026-10-15 20:00:24.517081	calificado
-9	2	1	2026-10-20 19:20:27.267995	\N	en_progreso
-10	6	3	2026-10-21 01:22:27.313172	2026-10-21 01:23:16.085365	calificado
-11	7	3	2026-10-21 17:27:02.699759	\N	en_progreso
-12	7	1	2026-10-21 17:27:27.254148	\N	en_progreso
-13	7	3	2026-10-21 19:50:14.788839	2026-10-21 19:50:32.519637	calificado
+COPY public.intentos (id, candidato_id, examen_id, token, iniciado_en, finalizado_en, estado) FROM stdin;
+1	1	1	qdRoefXN-2ooiDb0DzApEueeh5cwrELAzbx8uZNDmzM	2026-09-12 02:14:24.637569	2026-09-12 02:34:48.518256	calificado
+2	2	1	-EbHN7js0m5LQIR4OR2VoOF8afXwVqilBTwNaE7rwFI	2026-09-27 20:43:30.050048	2026-09-27 20:47:00.46219	calificado
+3	3	2	qWYdgOnVrZNSQ13Q9C1YQOHnQTFS3NqoI1ndfkbRua0	2026-10-06 01:17:26.846461	\N	en_progreso
+4	3	1	NGgjUN3dtXp7ChXkmAJ7ZShSXu7aNgKHPS2dSRI6tW8	2026-10-06 01:52:05.858998	2026-10-06 01:52:59.390472	calificado
+5	3	1	ILnGCXAr8GsaFgjcEc4By_i8J29pcUK8cXPo9QxBdOc	2026-10-06 01:53:44.422212	\N	en_progreso
+6	4	3	DcvW9DhJy5AFYJlehheuRmtc5EcAnjvCjLCPu7FmdGM	2026-10-15 00:20:51.476	\N	en_progreso
+7	5	2	VIecL8AaIgcrps4NacgwywI_8Ni2bJ5zB5km7Ktct_M	2026-10-15 01:23:48.175538	\N	en_progreso
+8	5	1	XVRxWoN6ofQ9-qUN22KVgJgvPzO0IOETK6IKuhkZnCM	2026-10-15 20:00:08.816486	2026-10-15 20:00:24.517081	calificado
+9	2	1	MCKtEGpoEB7QCj3oxEydg5LT4nHG6tFiXpIkKEYyzFM	2026-10-20 19:20:27.267995	\N	en_progreso
+10	6	3	4IwkDo2K0BEJTDYb51D2iaPVdPuHoA7wb0kVSGuWRh0	2026-10-21 01:22:27.313172	2026-10-21 01:23:16.085365	calificado
+11	7	3	CIUeGaioilSSK2mu0NF1XPppXUrLWB0_07nLBiUROVM	2026-10-21 17:27:02.699759	\N	en_progreso
+12	7	1	6hg2G8lnWrh0ppbQuBNQg0mJs5aFtS384LaU1IUYQ14	2026-10-21 17:27:27.254148	\N	en_progreso
+13	7	3	bT6po8z0yBiWYQ1cul6ZVUpA-A-6AVSQOYfJHAaGK_4	2026-10-21 19:50:14.788839	2026-10-21 19:50:32.519637	calificado
 \.
 
 

@@ -1,9 +1,10 @@
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
+import secrets
 
 from app.database import get_db
 from app import models, schemas, ia, auth, calificacion_automatica
@@ -353,7 +354,8 @@ def crear_intento(intento: schemas.IntentoCreate, db: Session = Depends(get_db))
 
     nuevo_intento = models.Intento(
         candidato_id=intento.candidato_id,
-        examen_id=intento.examen_id
+        examen_id=intento.examen_id,
+        token=secrets.token_urlsafe(32)
     )
     db.add(nuevo_intento)
     db.commit()
@@ -361,11 +363,17 @@ def crear_intento(intento: schemas.IntentoCreate, db: Session = Depends(get_db))
     return nuevo_intento
 
 
+def _verificar_token_intento(intento: models.Intento, token: Optional[str]) -> None:
+    if not token or token != intento.token:
+        raise HTTPException(status_code=403, detail="Token de intento inválido o faltante")
+
+
 @app.get("/intentos/{intento_id}", response_model=schemas.IntentoOut)
-def obtener_intento(intento_id: int, db: Session = Depends(get_db)):
+def obtener_intento(intento_id: int, token: Optional[str] = Query(None), db: Session = Depends(get_db)):
     intento = db.query(models.Intento).filter(models.Intento.id == intento_id).first()
     if not intento:
         raise HTTPException(status_code=404, detail="Intento no encontrado")
+    _verificar_token_intento(intento, token)
     return intento
 
 
@@ -388,11 +396,14 @@ def _intento_vencido(intento: models.Intento, db: Session) -> bool:
 def guardar_respuesta(
     intento_id: int,
     respuesta: schemas.RespuestaCreate,
+    token: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     intento = db.query(models.Intento).filter(models.Intento.id == intento_id).first()
     if not intento:
         raise HTTPException(status_code=404, detail="Intento no encontrado")
+
+    _verificar_token_intento(intento, token)
 
     if intento.estado == "calificado":
         raise HTTPException(status_code=409, detail="Este intento ya fue calificado y no admite cambios")
@@ -447,10 +458,12 @@ def listar_respuestas_de_intento(
 # ---------- Endpoint de Calificación con IA ----------
 
 @app.post("/intentos/{intento_id}/calificar", response_model=schemas.ResultadoOut)
-def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
+def calificar_intento(intento_id: int, token: Optional[str] = Query(None), db: Session = Depends(get_db)):
     intento = db.query(models.Intento).filter(models.Intento.id == intento_id).first()
     if not intento:
         raise HTTPException(status_code=404, detail="Intento no encontrado")
+
+    _verificar_token_intento(intento, token)
 
     if intento.resultado is not None:
         raise HTTPException(status_code=409, detail="Este intento ya fue calificado")

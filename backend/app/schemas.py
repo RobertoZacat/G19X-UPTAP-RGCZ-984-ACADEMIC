@@ -113,6 +113,7 @@ class IntentoOut(BaseModel):
     id: int
     candidato_id: int
     examen_id: int
+    token: str
     iniciado_en: datetime
     finalizado_en: Optional[datetime] = None
     estado: str
