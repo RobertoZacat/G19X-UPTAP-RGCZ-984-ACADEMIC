@@ -78,6 +78,10 @@ class Intento(Base):
     respuestas = relationship("Respuesta", back_populates="intento")
     resultado = relationship("Resultado", back_populates="intento", uselist=False)
 
+    @property
+    def tiempo_limite_min(self):
+        return self.examen.tiempo_limite_min if self.examen else None
+
 
 class Respuesta(Base):
     __tablename__ = "respuestas"

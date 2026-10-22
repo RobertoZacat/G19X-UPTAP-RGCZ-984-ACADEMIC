@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.database import get_db
 from app import models, schemas, ia, auth, calificacion_automatica
@@ -371,6 +371,19 @@ def obtener_intento(intento_id: int, db: Session = Depends(get_db)):
 
 # ---------- Endpoints de Respuestas ----------
 
+MARGEN_LATENCIA_SEGUNDOS = 30
+
+
+def _intento_vencido(intento: models.Intento, db: Session) -> bool:
+    examen = db.query(models.Examen).filter(models.Examen.id == intento.examen_id).first()
+    if not examen or not examen.tiempo_limite_min:
+        return False
+    limite = intento.iniciado_en + timedelta(
+        minutes=examen.tiempo_limite_min, seconds=MARGEN_LATENCIA_SEGUNDOS
+    )
+    return datetime.utcnow() > limite
+
+
 @app.post("/intentos/{intento_id}/respuestas", response_model=schemas.RespuestaOut)
 def guardar_respuesta(
     intento_id: int,
@@ -383,6 +396,9 @@ def guardar_respuesta(
 
     if intento.estado == "calificado":
         raise HTTPException(status_code=409, detail="Este intento ya fue calificado y no admite cambios")
+
+    if _intento_vencido(intento, db):
+        raise HTTPException(status_code=409, detail="El tiempo límite del examen ya venció")
 
     pregunta = db.query(models.Pregunta).filter(models.Pregunta.id == respuesta.pregunta_id).first()
     if not pregunta:
@@ -438,6 +454,9 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
 
     if intento.resultado is not None:
         raise HTTPException(status_code=409, detail="Este intento ya fue calificado")
+
+    if _intento_vencido(intento, db):
+        raise HTTPException(status_code=409, detail="El tiempo límite del examen ya venció")
 
     respuestas = db.query(models.Respuesta).filter(models.Respuesta.intento_id == intento_id).all()
     if not respuestas:

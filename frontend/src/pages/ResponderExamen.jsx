@@ -13,6 +13,7 @@ export default function ResponderExamen() {
   const [cargandoInicial, setCargandoInicial] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
+  const [tiempoRestante, setTiempoRestante] = useState(null);
 
   useEffect(() => {
     async function cargar() {
@@ -30,6 +31,27 @@ export default function ResponderExamen() {
     }
     cargar();
   }, [intentoId]);
+
+  useEffect(() => {
+    if (!intento?.iniciado_en || !intento?.tiempo_limite_min) return;
+
+    const inicio = new Date(intento.iniciado_en + "Z").getTime();
+    const limite = inicio + intento.tiempo_limite_min * 60 * 1000;
+
+    function actualizar() {
+      setTiempoRestante(Math.max(0, Math.floor((limite - Date.now()) / 1000)));
+    }
+
+    actualizar();
+    const intervalo = setInterval(actualizar, 1000);
+    return () => clearInterval(intervalo);
+  }, [intento]);
+
+  function formatearTiempo(segundos) {
+    const m = Math.floor(segundos / 60);
+    const s = segundos % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }
 
   function handleCambio(preguntaId, texto) {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
@@ -99,6 +121,12 @@ export default function ResponderExamen() {
           Tienes {preguntas.length} pregunta{preguntas.length !== 1 ? "s" : ""} por responder.
         </p>
 
+        {tiempoRestante !== null && (
+          <p className={`mb-7 text-sm font-semibold ${tiempoRestante === 0 ? "text-[#B3492E]" : "text-[#5C5B54]"}`}>
+            Tiempo restante: {formatearTiempo(tiempoRestante)}
+          </p>
+        )}
+
         <div className="mb-6 flex flex-col gap-5">
           {preguntas.map((p, i) => {
             const esOpcionMultiple = p.tipo === "opcion_multiple" && p.opciones?.length > 0;
@@ -153,7 +181,11 @@ export default function ResponderExamen() {
 
         {error && <p className="mb-4 text-sm text-[#B3492E]">{error}</p>}
 
-        <button onClick={handleFinalizar} disabled={enviando} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
+        {tiempoRestante === 0 && (
+          <p className="mb-4 text-sm text-[#B3492E]">El tiempo del examen terminó. Ya no puedes enviar respuestas.</p>
+        )}
+
+        <button onClick={handleFinalizar} disabled={enviando || tiempoRestante === 0} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
           {enviando ? "Enviando y calificando..." : "Finalizar examen"}
         </button>
       </div>
