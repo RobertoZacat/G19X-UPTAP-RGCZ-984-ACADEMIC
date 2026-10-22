@@ -1,5 +1,5 @@
 from pydantic import BaseModel, model_validator
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 
 
@@ -21,7 +21,7 @@ class PerfilOut(PerfilBase):
 # ---------- Pregunta ----------
 class PreguntaBase(BaseModel):
     perfil_id: int
-    tipo: str  # "opcion_multiple" o "abierta"
+    tipo: Literal["abierta", "opcion_multiple"]
     enunciado: str
     rubrica: Optional[str] = None
     opciones: Optional[List[str]] = None
