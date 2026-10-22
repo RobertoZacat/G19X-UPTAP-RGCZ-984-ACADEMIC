@@ -54,8 +54,11 @@ La IA es una herramienta de apoyo: **el evaluador humano decide cómo y cuándo 
 
 ### Flujo del candidato (público)
 - Acceso con nombre y correo, sin cuenta; si el correo ya existe, se reutiliza el candidato.
+- Cada intento recibe un **token aleatorio** que el candidato lleva en la URL; las rutas del intento lo exigen (403 sin él).
 - Pantalla con las preguntas del examen: campo de texto para las abiertas y botones de radio para las de opción múltiple.
+- **Contador regresivo** con el tiempo límite del examen.
 - Validación de que todas las preguntas estén respondidas antes de finalizar.
+- Al agotarse el tiempo, el sistema **envía automáticamente** las respuestas contestadas y las califica.
 - Un intento no se puede calificar dos veces ni admite respuestas una vez calificado.
 - Mensaje claro cuando el examen aún no tiene preguntas.
 - Pantalla de confirmación al terminar (sin mostrar la calificación).
@@ -64,7 +67,7 @@ La IA es una herramienta de apoyo: **el evaluador humano decide cómo y cuándo 
 - Prompt dinámico con enunciado, rúbrica y respuesta del candidato, con la respuesta delimitada para evitar *prompt injection*.
 - Respuesta estructurada en JSON: nota de 0 a 10 y retroalimentación breve; la nota se valida y se limita al rango 0–10.
 - Reintentos ante saturación del servicio y modelo de respaldo opcional (`GEMINI_MODEL_RESPALDO`); errores claros al candidato.
-- Calificación total = promedio de las notas por pregunta; el intento pasa a `calificado`.
+- Calificación total = promedio de las notas sobre el total de preguntas; las no respondidas cuentan 0 y se marcan en la retroalimentación.
 - Las preguntas de opción múltiple con respuesta correcta se califican automáticamente, sin llamar a la IA.
 - Integración aislada en un solo archivo, para cambiar de proveedor sin tocar el resto del sistema.
 
@@ -131,7 +134,7 @@ Calificación
 - Endpoints con datos de candidatos y rúbricas protegidos con sesión; rúbricas nunca enviadas al candidato.
 - `SECRET_KEY` obligatoria: sin ella el backend no arranca.
 - Protección contra doble calificación (validación y restricción de unicidad en base de datos).
-- **Pendiente** (ver PRD, sección 4.22): verificación de pertenencia del intento en el flujo del candidato, tiempo límite del examen, límite de intentos de login, cookie `HttpOnly`, auditoría y aviso de privacidad.
+- **Pendiente** (ver PRD, sección 4.22): límite de intentos de login, cookie `HttpOnly`, auditoría y aviso de privacidad.
 
 ---
 
@@ -216,7 +219,7 @@ python crear_admin.py
 | Pruebas manuales restantes (respuesta vacía, candidato repetido, recarga a mitad de examen) | 🔄 En curso |
 | Manejo de errores y defensa del prompt en la IA | ✅ Completado |
 | Opción múltiple con calificación automática | ✅ Completado |
-| Tiempo límite del examen | ⏳ Pendiente |
+| Tiempo límite del examen (contador, envío automático y rechazo al vencer) | ✅ Completado |
 | Pruebas automatizadas (pytest, Playwright) y CI/CD | ⏳ Pendiente |
 | Documentación técnica y de usuario, plan de mantenimiento, capacitación y cierre | 🔄 En curso |
 

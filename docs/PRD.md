@@ -187,24 +187,27 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 
 ### Módulo Candidato (acceso, intentos y respuestas)
 - FR-CAN-01: Acceso sin cuenta: `POST /candidatos/acceso` devuelve el candidato existente por correo o lo crea, sin duplicar. [TEC]
-- FR-CAN-02: Crear un intento (candidato + examen) con estado inicial `en_progreso` y fecha de inicio. [TEC]
+- FR-CAN-02: Crear un intento (candidato + examen) con estado inicial `en_progreso`, fecha de inicio y un token aleatorio único. [TEC]
 - FR-CAN-03: Guardar las respuestas de un intento (si ya existe una para la misma pregunta, se actualiza en lugar de duplicarse) y listarlas (esto último requiere sesión). [TEC]
 - FR-CAN-04: La interfaz exige responder todas las preguntas antes de finalizar. [TEC]
 - FR-CAN-05: Si el examen no tiene preguntas, mostrar un mensaje de "examen no disponible" en lugar del formulario. [TEC]
 - FR-CAN-06: Al finalizar, el candidato ve únicamente una confirmación de envío, sin su calificación. [TEC]
 - FR-CAN-07: Un intento ya calificado no admite nuevas respuestas (respuesta 409). [TEC]
 - FR-CAN-08: Listar y crear candidatos desde el panel requiere sesión; el candidato usa únicamente el acceso por correo. [TEC]
+- FR-CAN-09: Las rutas del candidato (`GET /intentos/{id}`, `POST /intentos/{id}/respuestas`, `POST /intentos/{id}/calificar`) exigen el token del intento; sin él responden 403. [TEC]
+- FR-CAN-10: Al agotarse el tiempo límite, el sistema envía automáticamente las respuestas contestadas y las califica. [TEC]
 
 ### Módulo Calificación con IA
 - FR-AI-01: Calificar un intento (`POST /intentos/{id}/calificar`): para cada respuesta, construir un prompt con enunciado, rúbrica y respuesta del candidato. [TEC]
 - FR-AI-02: Si la pregunta no tiene rúbrica, usar un criterio genérico de calidad y correctitud técnica. [TEC]
 - FR-AI-03: La IA responde únicamente en JSON con `calificacion` (0 a 10) y `retroalimentacion` breve. [TEC]
-- FR-AI-04: La calificación total del intento es el promedio de las notas por pregunta. [TEC]
+- FR-AI-04: La calificación total del intento es el promedio de las notas sobre el total de preguntas del examen; las preguntas sin respuesta cuentan 0. [TEC]
 - FR-AI-05: La retroalimentación se guarda concatenada, una línea por pregunta. [TEC]
 - FR-AI-06: Al calificar, el intento pasa a estado `calificado` y se registra su fecha de finalización. [TEC]
 - FR-AI-07: Rechazar la calificación de un intento sin respuestas. [TEC]
 - FR-AI-08: Rechazar con 409 la calificación de un intento que ya tiene resultado; el resultado y el cambio de estado se guardan en una sola transacción. [TEC]
 - FR-AI-09: Las preguntas de opción múltiple con respuesta correcta se califican automáticamente (10 si acierta, 0 si no), sin llamar a la IA. [TEC]
+- FR-AI-10: Las preguntas sin respuesta se marcan con 0 puntos y se indican en la retroalimentación. [TEC]
 
 ### Módulo Resultados
 - FR-RES-01: Listar resultados con candidato (nombre y correo), examen, calificación total, retroalimentación y fecha de finalización (`GET /resultados`); requiere sesión. [TEC]
@@ -249,6 +252,9 @@ Desarrollar un sistema inteligente para la evaluación técnica automatizada de 
 - La rúbrica nunca se entrega al candidato; solo la ve el personal autenticado. [TEC]
 - Solo se muestran para asignar a un examen las preguntas de su mismo perfil. [TEC]
 - La sesión vence a las 8 horas y exige iniciar sesión de nuevo. [TEC]
+- Cada intento tiene un token aleatorio único; las rutas del candidato lo exigen para operar. [TEC]
+- Una pregunta sin respuesta cuenta 0 en la calificación del examen. [TEC]
+- Al vencer el tiempo límite, el intento se envía automáticamente con las respuestas contestadas. [TEC]
 
 ## 4.13 Casos de uso
 
@@ -283,11 +289,11 @@ Login (POST /login) → Token JWT (8 h) → Panel (React)
 ```
 /presentar  (nombre + correo + examen)
   → POST /candidatos/acceso   (reutiliza o crea al candidato)
-  → POST /intentos            (estado: en_progreso)
-  → /examen/{intento}         (muestra las preguntas)
-  → "Finalizar examen"
-       → POST /intentos/{id}/respuestas   (una por pregunta)
-       → POST /intentos/{id}/calificar    (IA)
+  → POST /intentos            (estado: en_progreso, devuelve token)
+  → /examen/{intento}?token=… (muestra las preguntas y el contador)
+  → "Finalizar examen" (o vencimiento del tiempo)
+       → POST /intentos/{id}/respuestas   (una por pregunta, con token)
+       → POST /intentos/{id}/calificar    (IA, con token)
   → /examen/{intento}/completado   (solo confirmación)
 ```
 
@@ -296,7 +302,8 @@ Login (POST /login) → Token JWT (8 h) → Panel (React)
 Para cada respuesta del intento:
   → Prompt = enunciado + rúbrica + respuesta del candidato
   → Gemini → JSON {"calificacion": 0-10, "retroalimentacion": "..."}
-Calificación total = promedio de las notas
+Calificación total = promedio de las notas sobre el total de preguntas
+  (las no respondidas cuentan 0)
   → Guardar Resultado (nota + retroalimentación)
   → Intento: estado = calificado, finalizado_en = ahora
 ```
@@ -348,15 +355,15 @@ Infraestructura: Docker Compose (PostgreSQL), Git y GitHub. El backend y el fron
 | DELETE | `/examenes/{id}/preguntas/{pregunta_id}` | Autenticado | Quita una pregunta |
 | POST, GET | `/candidatos`, `/candidatos` | Autenticado | Crea / lista candidatos |
 | POST | `/candidatos/acceso` | Público | Obtiene o crea candidato por correo |
-| POST | `/intentos` | Público | Crea un intento |
-| GET | `/intentos/{id}` | Público | Consulta un intento |
-| POST | `/intentos/{id}/respuestas` | Público | Guarda o actualiza una respuesta (409 si el intento ya fue calificado) |
+| POST | `/intentos` | Público | Crea un intento (devuelve su token) |
+| GET | `/intentos/{id}` | Token | Consulta un intento (exige el token) |
+| POST | `/intentos/{id}/respuestas` | Token | Guarda o actualiza una respuesta (409 si el intento ya fue calificado o venció) |
 | GET | `/intentos/{id}/respuestas` | Autenticado | Lista las respuestas de un intento |
-| POST | `/intentos/{id}/calificar` | Público | Califica con IA y guarda el resultado (409 si ya fue calificado) |
+| POST | `/intentos/{id}/calificar` | Token | Califica con IA y guarda el resultado (409 si ya fue calificado o venció) |
 | GET | `/resultados` | Autenticado | Lista resultados detallados |
 | GET | `/`, `/health` | Público | Estado de la API |
 
-> Los endpoints «Público» son los que necesita el flujo del candidato (que no tiene cuenta), además del login y el estado de la API. Que esos endpoints no verifiquen la pertenencia del intento es una limitación conocida; ver sección 4.22.
+> Los endpoints «Público» son los que necesita el flujo del candidato (que no tiene cuenta), además del login y el estado de la API. Los marcados como «Token» exigen el token aleatorio del intento, que solo conoce el candidato que lo inició.
 
 ## 4.16 Seguridad
 
@@ -375,6 +382,7 @@ Implementado:
 - La `SECRET_KEY` es obligatoria: si falta en el entorno, el backend no arranca (no existe un valor por defecto). [TEC]
 - Un intento no puede calificarse dos veces; la restricción de unicidad de la base de datos respalda la validación. [TEC]
 - Defensa contra *prompt injection*: la respuesta del candidato se delimita con etiquetas y se limpia antes de insertarse en el prompt. [TEC]
+- Token aleatorio por intento (`secrets.token_urlsafe`): las rutas del candidato lo exigen, de modo que no basta con adivinar un `intento_id` consecutivo. [TEC]
 
 Pendiente de implementar: ver sección 4.22.
 
@@ -411,7 +419,7 @@ Pendiente de implementar: ver sección 4.22.
 - **Defensa del prompt:** la respuesta del candidato se delimita con etiquetas `<respuesta_candidato>` y se le indica al modelo que todo lo que esté dentro es texto a evaluar, nunca instrucciones; además se recorta el texto y se eliminan las etiquetas que intenten cerrar el delimitador. [TEC]
 - **Validación de la salida:** se extrae el JSON, se rechazan valores no numéricos o no finitos (NaN, infinito) y la nota se limita al rango 0–10. [TEC]
 - **Reintentos y modelo de respaldo:** ante fallas pasajeras (saturación, 429/5xx) se reintenta hasta 3 veces por modelo y, si está configurado `GEMINI_MODEL_RESPALDO`, se usa como alternativa. Las fallas permanentes y temporales se distinguen con `IAError` y llegan al candidato con un mensaje claro. [TEC]
-- **Agregación:** calificación total = promedio de las notas por pregunta; retroalimentación = una línea por pregunta. [TEC]
+- **Agregación:** calificación total = promedio de las notas sobre el total de preguntas del examen (las no respondidas cuentan 0); retroalimentación = una línea por pregunta. [TEC]
 - **Aislamiento:** toda la integración vive en `ia.py` (función `calificar_respuesta`), por lo que cambiar de proveedor implica modificar un solo archivo. [TEC]
 - **Nota sobre modelos:** los nombres de modelos de Gemini se retiran con el tiempo (el modelo `gemini-2.0-flash` ya no está disponible); el nombre del modelo debe revisarse periódicamente. [TEC]
 - **No se usan** RAG, embeddings, LangChain ni function calling en esta versión; el documento fuente menciona LangChain [DOC], y se decidió no incluirlo porque el caso de uso se resuelve con llamadas directas a la API. [TEC]
@@ -432,6 +440,9 @@ Pendiente de implementar: ver sección 4.22.
 12. El proyecto se instala y ejecuta en otra máquina siguiendo únicamente el README.
 13. Los resultados, la lista de candidatos y las rúbricas no son accesibles sin sesión, y el candidato no recibe rúbricas.
 14. Calificar dos veces un mismo intento responde 409 y no genera un segundo resultado.
+15. Las rutas del candidato exigen el token del intento y responden 403 sin él.
+16. El candidato ve el tiempo restante y, al vencer, el sistema envía automáticamente sus respuestas contestadas.
+17. Las preguntas sin respuesta cuentan 0 en la calificación y se marcan en la retroalimentación.
 
 ## 4.20 Métricas / KPIs
 
@@ -460,20 +471,18 @@ Pendiente de implementar: ver sección 4.22.
 | Documentación | Informe técnico, manual técnico y manual de usuario | 🔄 En curso |
 | Mantenimiento | Plan de mantenimiento y soporte multinivel | ⏳ Pendiente |
 | Cierre | Capacitación, acta y evaluación post-implementación | ⏳ Pendiente |
-| Post-MVP | Tiempo límite del examen, pruebas automatizadas, CI/CD y mejoras de experiencia | ⏳ Pendiente |
+| Post-MVP | Pruebas automatizadas, CI/CD y mejoras de experiencia | ⏳ Pendiente |
 
 ## 4.22 Limitaciones conocidas y deuda técnica
 
 Se documentan de forma explícita para que el alcance real del MVP quede claro:
 
 **Seguridad**
-- Los endpoints públicos del flujo del candidato (crear intento, guardar respuestas, calificar) no validan que quien llama sea el candidato dueño del intento; los identificadores son consecutivos.
 - Sin límite de intentos de login, sin bloqueo temporal, sin refresh token y sin auditoría de accesos.
 - El token se guarda en el navegador (`localStorage`), lo que lo expone ante un ataque XSS; lo recomendable es una cookie `HttpOnly`.
 - Falta aviso de privacidad y consentimiento del candidato sobre el tratamiento de sus datos personales.
 
 **Funcionalidad**
-- El tiempo límite del examen se guarda pero no se aplica ni se muestra al candidato.
 - Las respuestas se guardan solo al finalizar; recargar la página a mitad del examen borra lo escrito.
 - La calificación llama a la IA una pregunta a la vez; en exámenes largos el candidato espera varios segundos.
 - Se corrigió la duplicación de respuestas al reintentar el envío; queda por confirmar con pruebas si el error del segundo intento de un mismo candidato desapareció.
