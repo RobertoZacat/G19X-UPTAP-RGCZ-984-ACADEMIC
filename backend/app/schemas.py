@@ -116,6 +116,7 @@ class IntentoOut(BaseModel):
     iniciado_en: datetime
     finalizado_en: Optional[datetime] = None
     estado: str
+    tiempo_limite_min: Optional[int] = None
 
     class Config:
         from_attributes = True

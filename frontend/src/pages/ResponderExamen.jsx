@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
@@ -13,6 +13,8 @@ export default function ResponderExamen() {
   const [cargandoInicial, setCargandoInicial] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
+  const [tiempoRestante, setTiempoRestante] = useState(null);
+  const autoEnviado = useRef(false);
 
   useEffect(() => {
     async function cargar() {
@@ -31,22 +33,36 @@ export default function ResponderExamen() {
     cargar();
   }, [intentoId]);
 
+  useEffect(() => {
+    if (!intento?.iniciado_en || !intento?.tiempo_limite_min) return;
+
+    const inicio = new Date(intento.iniciado_en + "Z").getTime();
+    const limite = inicio + intento.tiempo_limite_min * 60 * 1000;
+
+    function actualizar() {
+      setTiempoRestante(Math.max(0, Math.floor((limite - Date.now()) / 1000)));
+    }
+
+    actualizar();
+    const intervalo = setInterval(actualizar, 1000);
+    return () => clearInterval(intervalo);
+  }, [intento]);
+
+  function formatearTiempo(segundos) {
+    const m = Math.floor(segundos / 60);
+    const s = segundos % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
   function handleCambio(preguntaId, texto) {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
   }
 
-  async function handleFinalizar() {
-    setError("");
-
-    const faltantes = preguntas.filter((p) => !respuestas[p.id]?.trim());
-    if (faltantes.length > 0) {
-      setError("Responde todas las preguntas antes de finalizar.");
-      return;
-    }
-
+  const enviarRespuestas = useCallback(async () => {
     setEnviando(true);
     try {
-      for (const pregunta of preguntas) {
+      const contestadas = preguntas.filter((p) => respuestas[p.id]?.trim());
+      for (const pregunta of contestadas) {
         await api.post(`/intentos/${intentoId}/respuestas`, {
           pregunta_id: pregunta.id,
           respuesta_texto: respuestas[pregunta.id],
@@ -66,6 +82,28 @@ export default function ResponderExamen() {
       }
       setEnviando(false);
     }
+  }, [preguntas, respuestas, intentoId, navigate]);
+
+  useEffect(() => {
+    if (tiempoRestante !== 0 || autoEnviado.current || enviando) return;
+
+    const hayRespuestas = preguntas.some((p) => respuestas[p.id]?.trim());
+    if (!hayRespuestas) return;
+
+    autoEnviado.current = true;
+    enviarRespuestas();
+  }, [tiempoRestante, preguntas, respuestas, enviando, enviarRespuestas]);
+
+  async function handleFinalizar() {
+    setError("");
+
+    const faltantes = preguntas.filter((p) => !respuestas[p.id]?.trim());
+    if (faltantes.length > 0) {
+      setError("Responde todas las preguntas antes de finalizar.");
+      return;
+    }
+
+    await enviarRespuestas();
   }
 
   if (cargandoInicial) {
@@ -98,6 +136,12 @@ export default function ResponderExamen() {
         <p className="mb-7 text-sm text-[#5C5B54]">
           Tienes {preguntas.length} pregunta{preguntas.length !== 1 ? "s" : ""} por responder.
         </p>
+
+        {tiempoRestante !== null && (
+          <p className={`mb-7 text-sm font-semibold ${tiempoRestante === 0 ? "text-[#B3492E]" : "text-[#5C5B54]"}`}>
+            Tiempo restante: {formatearTiempo(tiempoRestante)}
+          </p>
+        )}
 
         <div className="mb-6 flex flex-col gap-5">
           {preguntas.map((p, i) => {
@@ -153,7 +197,11 @@ export default function ResponderExamen() {
 
         {error && <p className="mb-4 text-sm text-[#B3492E]">{error}</p>}
 
-        <button onClick={handleFinalizar} disabled={enviando} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
+        {tiempoRestante === 0 && (
+          <p className="mb-4 text-sm text-[#B3492E]">El tiempo del examen terminó. Ya no puedes enviar respuestas.</p>
+        )}
+
+        <button onClick={handleFinalizar} disabled={enviando || tiempoRestante === 0} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
           {enviando ? "Enviando y calificando..." : "Finalizar examen"}
         </button>
       </div>

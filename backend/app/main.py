@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.database import get_db
 from app import models, schemas, ia, auth, calificacion_automatica
@@ -371,6 +371,19 @@ def obtener_intento(intento_id: int, db: Session = Depends(get_db)):
 
 # ---------- Endpoints de Respuestas ----------
 
+MARGEN_LATENCIA_SEGUNDOS = 30
+
+
+def _intento_vencido(intento: models.Intento, db: Session) -> bool:
+    examen = db.query(models.Examen).filter(models.Examen.id == intento.examen_id).first()
+    if not examen or not examen.tiempo_limite_min:
+        return False
+    limite = intento.iniciado_en + timedelta(
+        minutes=examen.tiempo_limite_min, seconds=MARGEN_LATENCIA_SEGUNDOS
+    )
+    return datetime.utcnow() > limite
+
+
 @app.post("/intentos/{intento_id}/respuestas", response_model=schemas.RespuestaOut)
 def guardar_respuesta(
     intento_id: int,
@@ -383,6 +396,9 @@ def guardar_respuesta(
 
     if intento.estado == "calificado":
         raise HTTPException(status_code=409, detail="Este intento ya fue calificado y no admite cambios")
+
+    if _intento_vencido(intento, db):
+        raise HTTPException(status_code=409, detail="El tiempo límite del examen ya venció")
 
     pregunta = db.query(models.Pregunta).filter(models.Pregunta.id == respuesta.pregunta_id).first()
     if not pregunta:
@@ -439,15 +455,35 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
     if intento.resultado is not None:
         raise HTTPException(status_code=409, detail="Este intento ya fue calificado")
 
+    if _intento_vencido(intento, db):
+        raise HTTPException(status_code=409, detail="El tiempo límite del examen ya venció")
+
     respuestas = db.query(models.Respuesta).filter(models.Respuesta.intento_id == intento_id).all()
     if not respuestas:
         raise HTTPException(status_code=400, detail="Este intento no tiene respuestas guardadas")
 
+    preguntas_examen = (
+        db.query(models.Pregunta)
+        .join(models.ExamenPregunta)
+        .filter(models.ExamenPregunta.examen_id == intento.examen_id)
+        .all()
+    )
+
+    if not preguntas_examen:
+        raise HTTPException(status_code=400, detail="Este examen no tiene preguntas asignadas")
+
+    respuestas_por_pregunta = {r.pregunta_id: r for r in respuestas}
+
     calificaciones = []
     retroalimentaciones = []
 
-    for respuesta in respuestas:
-        pregunta = db.query(models.Pregunta).filter(models.Pregunta.id == respuesta.pregunta_id).first()
+    for pregunta in preguntas_examen:
+        respuesta = respuestas_por_pregunta.get(pregunta.id)
+
+        if respuesta is None:
+            calificaciones.append(0.0)
+            retroalimentaciones.append(f"Pregunta {pregunta.id}: Sin respuesta (0 puntos).")
+            continue
 
         if pregunta.tipo == "opcion_multiple" and pregunta.respuesta_correcta:
             # Opción múltiple con respuesta correcta definida: se califica sin IA
@@ -471,7 +507,7 @@ def calificar_intento(intento_id: int, db: Session = Depends(get_db)):
 
     nuevo_resultado = models.Resultado(
         intento_id=intento_id,
-        calificacion_total=sum(calificaciones) / len(calificaciones),
+        calificacion_total=sum(calificaciones) / len(preguntas_examen),
         retroalimentacion_ia="\n".join(retroalimentaciones)
     )
     intento.estado = "calificado"
