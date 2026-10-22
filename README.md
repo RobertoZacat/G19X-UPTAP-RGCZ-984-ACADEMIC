@@ -37,6 +37,15 @@ docker compose exec -T db psql -U eval_user -d eval_tecnica < db/base-de-datos.s
 Get-Content db/base-de-datos.sql | docker compose exec -T db psql -U eval_user -d eval_tecnica
 ```
 
+> Si ya tenías la base de datos de una versión anterior, recréala antes de importar: `create_all` no agrega columnas nuevas a tablas existentes. Borra el volumen y vuelve a levantarlo:
+>
+> ```
+> docker compose down -v
+> docker compose up -d
+> ```
+>
+> y luego importa `db/base-de-datos.sql` como se indica arriba.
+
 ## Configuración
 
 Copia los archivos de ejemplo de variables de entorno:
@@ -54,6 +63,14 @@ Copy-Item frontend\.env.example frontend\.env
 ```
 
 Luego abre `backend/.env` y llena los valores reales (están en "Accesos de prueba", en Mis documentos). El `frontend/.env` ya funciona con su valor por defecto para desarrollo local.
+
+Para `SECRET_KEY`, genera un valor aleatorio con:
+
+```
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Copia el resultado en `SECRET_KEY=`. Sin esta variable, el backend no arranca.
 
 ## Cómo instalarlo y ejecutarlo
 
