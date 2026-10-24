@@ -115,6 +115,12 @@ Se abre en http://localhost:5173
   - contraseña: `claveSegura123`
 - **Presentar examen (sin login):** http://localhost:5173/presentar
 
+## Documentación
+
+- **Manual de usuario:** [`docs/MANUAL_USUARIO.md`](docs/MANUAL_USUARIO.md)
+- **Requerimientos (PRD):** [`docs/PRD.md`](docs/PRD.md)
+- **Alcance del MVP:** [`docs/MVP.md`](docs/MVP.md)
+
 ## Estructura del proyecto
 
 ```
