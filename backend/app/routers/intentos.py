@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.database import get_db
 from app import models, schemas, auth, ia, calificacion_automatica
+from app.models import utcnow
 
 router = APIRouter(prefix="/intentos", tags=["intentos"])
 
@@ -15,7 +16,7 @@ MARGEN_LATENCIA_SEGUNDOS = 30
 
 
 def _verificar_token_intento(intento: models.Intento, token: Optional[str]) -> None:
-    if not token or token != intento.token:
+    if not token or not secrets.compare_digest(token, intento.token):
         raise HTTPException(status_code=403, detail="Token de intento inválido o faltante")
 
 
@@ -26,7 +27,7 @@ def _intento_vencido(intento: models.Intento, db: Session) -> bool:
     limite = intento.iniciado_en + timedelta(
         minutes=examen.tiempo_limite_min, seconds=MARGEN_LATENCIA_SEGUNDOS
     )
-    return datetime.utcnow() > limite
+    return utcnow() > limite
 
 
 @router.post("", response_model=schemas.IntentoOut)
@@ -189,7 +190,7 @@ def calificar_intento(intento_id: int, token: Optional[str] = Query(None), db: S
         retroalimentacion_ia="\n".join(retroalimentaciones)
     )
     intento.estado = "calificado"
-    intento.finalizado_en = datetime.utcnow()
+    intento.finalizado_en = utcnow()
     db.add(nuevo_resultado)
 
     try:

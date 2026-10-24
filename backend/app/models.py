@@ -1,7 +1,12 @@
 from sqlalchemy import Column, Integer, String, Text, Float, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import Base
+
+
+def utcnow():
+    """Fecha/hora UTC actual sin zona horaria (compatible con columnas DateTime)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Perfil(Base):
@@ -70,7 +75,7 @@ class Intento(Base):
     candidato_id = Column(Integer, ForeignKey("candidatos.id"))
     examen_id = Column(Integer, ForeignKey("examenes.id"))
     token = Column(String, unique=True, nullable=False)
-    iniciado_en = Column(DateTime, default=datetime.utcnow)
+    iniciado_en = Column(DateTime, default=utcnow)
     finalizado_en = Column(DateTime, nullable=True)
     estado = Column(String, default="en_progreso")
 
