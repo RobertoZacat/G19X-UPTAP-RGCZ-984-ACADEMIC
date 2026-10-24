@@ -133,12 +133,7 @@ def calificar_intento(intento_id: int, token: Optional[str] = Query(None), db: S
     if intento.resultado is not None:
         raise HTTPException(status_code=409, detail="Este intento ya fue calificado")
 
-    if _intento_vencido(intento, db):
-        raise HTTPException(status_code=409, detail="El tiempo límite del examen ya venció")
-
     respuestas = db.query(models.Respuesta).filter(models.Respuesta.intento_id == intento_id).all()
-    if not respuestas:
-        raise HTTPException(status_code=400, detail="Este intento no tiene respuestas guardadas")
 
     preguntas_examen = (
         db.query(models.Pregunta)
