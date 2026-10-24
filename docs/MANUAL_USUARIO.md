@@ -49,7 +49,7 @@ Un **perfil** agrupa preguntas y exámenes por área (por ejemplo, «Backend Jun
 - **Editar:** pulsa el botón de editar del perfil.
 - **Eliminar:** pulsa el botón de eliminar. El sistema lo impide si el perfil tiene preguntas asociadas y explica el motivo.
 
-> *[Captura: pantalla de Perfiles con la lista y el formulario de alta]*
+> ![alt text](cap/perfiles.png)
 
 ### 3.2 Preguntas
 
@@ -59,7 +59,7 @@ El **banco de preguntas** guarda el enunciado, la rúbrica de evaluación y, si 
   - Si es **opción múltiple**, agrega al menos 2 opciones y marca la correcta.
 - **Editar / Eliminar:** con los botones de cada fila. No se puede eliminar una pregunta asignada a un examen.
 
-> *[Captura: pantalla de Preguntas con el formulario de opción múltiple]*
+> ![alt text](cap/preguntas.png)
 
 ### 3.3 Exámenes
 
@@ -70,7 +70,7 @@ Un **examen** reúne preguntas de un perfil y define su **tiempo límite** (en m
 - **Quitar preguntas:** con el botón de quitar de cada pregunta asignada.
 - **Eliminar:** no se permite si algún candidato ya lo presentó.
 
-> *[Captura: pantalla de Exámenes con el detalle y las preguntas asignadas]*
+> ![alt text](cap/examenes.png)
 
 ### 3.4 Resultados
 
@@ -79,14 +79,14 @@ Aquí se revisa la **calificación** y la **retroalimentación** de la IA por ca
 - Cada fila muestra: candidato, correo, examen, calificación total y retroalimentación.
 - La nota se colorea: **verde** (≥ 8), **ámbar** (≥ 6) y **rojo** (< 6).
 
-> *[Captura: pantalla de Resultados con las notas y su código de color]*
+> ![alt text](cap/resultados.png)
 
 ### 3.5 Usuarios (solo administrador)
 
 - **Crear:** escribe nombre, correo, contraseña y rol (`admin` o `evaluador`).
 - **Listar:** muestra los usuarios del sistema.
 
-> *[Captura: pantalla de Usuarios]*
+> ![alt text](cap/usuarios.png)
 
 ---
 
@@ -103,7 +103,7 @@ El candidato **no necesita cuenta**. Presenta su examen desde un enlace público
 
 > Si el correo ya existe, el sistema reutiliza el candidato (no lo duplica).
 
-> *[Captura: pantalla de Presentar examen]*
+> ![alt text](cap/presentarexam.png)
 
 ### 4.2 Responder el examen
 
@@ -112,7 +112,7 @@ El candidato **no necesita cuenta**. Presenta su examen desde un enlace público
 - Tus respuestas se **guardan automáticamente** al cambiar de opción o al salir del campo de texto, así que si recargas la página no las pierdes.
 - Pulsa **Finalizar examen** cuando termines. El sistema valida que todas las preguntas estén respondidas.
 
-> *[Captura: pantalla de Responder examen con el contador]*
+> ![alt text](cap/responderexam.png)
 
 ### 4.3 Al agotarse el tiempo
 
@@ -124,7 +124,7 @@ El candidato **no necesita cuenta**. Presenta su examen desde un enlace público
 
 Al terminar verás una pantalla de **confirmación de envío**. El candidato **no ve su calificación**; solo el equipo de reclutamiento la revisa en **Resultados**.
 
-> *[Captura: pantalla de Examen completado]*
+> ![alt text](cap/examcompletado.png)
 
 ---
 
