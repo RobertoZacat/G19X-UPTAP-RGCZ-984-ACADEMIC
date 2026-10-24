@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Optional
 from dotenv import load_dotenv
 from jose import jwt, JWTError
@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app import models
+from app.models import utcnow
 
 load_dotenv()
 
@@ -36,7 +37,7 @@ def verificar_password(password_plano: str, password_hash: str) -> bool:
 
 def crear_token(data: dict) -> str:
     to_encode = data.copy()
-    expira = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expira = utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expira})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
