@@ -15,6 +15,7 @@ export default function ResponderExamen() {
   const [cargandoInicial, setCargandoInicial] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
+  const [errorTemporal, setErrorTemporal] = useState(false);
   const [tiempoRestante, setTiempoRestante] = useState(null);
   const autoEnviado = useRef(false);
 
@@ -24,8 +25,20 @@ export default function ResponderExamen() {
         const resIntento = await api.get(`/intentos/${intentoId}?token=${token}`);
         setIntento(resIntento.data);
 
+        if (resIntento.data.estado === "calificado") {
+          navigate(`/examen/${intentoId}/completado`, { replace: true });
+          return;
+        }
+
         const resPreguntas = await api.get(`/examenes/${resIntento.data.examen_id}/preguntas`);
         setPreguntas(resPreguntas.data);
+
+        const resRespuestas = await api.get(`/intentos/${intentoId}/respuestas?token=${token}`);
+        const guardadas = {};
+        resRespuestas.data.forEach((r) => {
+          guardadas[r.pregunta_id] = r.respuesta_texto;
+        });
+        setRespuestas(guardadas);
       } catch (err) {
         setError("No se pudo cargar el examen.");
       } finally {
@@ -33,7 +46,7 @@ export default function ResponderExamen() {
       }
     }
     cargar();
-  }, [intentoId, token]);
+  }, [intentoId, token, navigate]);
 
   useEffect(() => {
     if (!intento?.iniciado_en || !intento?.tiempo_limite_min) return;
@@ -56,12 +69,29 @@ export default function ResponderExamen() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
+  async function guardarRespuesta(preguntaId, texto) {
+    try {
+      await api.post(`/intentos/${intentoId}/respuestas?token=${token}`, {
+        pregunta_id: preguntaId,
+        respuesta_texto: texto,
+      });
+    } catch (err) {
+      const estado = err.response?.status;
+      if (estado === 409) {
+        setError("El tiempo del examen terminó o el intento ya fue calificado.");
+      }
+    }
+  }
+
   function handleCambio(preguntaId, texto) {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
+    guardarRespuesta(preguntaId, texto);
   }
 
   const enviarRespuestas = useCallback(async () => {
     setEnviando(true);
+    setError("");
+    setErrorTemporal(false);
     try {
       const contestadas = preguntas.filter((p) => respuestas[p.id]?.trim());
       for (const pregunta of contestadas) {
@@ -78,6 +108,7 @@ export default function ResponderExamen() {
       const detalle = err.response?.data?.detail;
 
       if ((estado === 503 || estado === 502) && typeof detalle === "string") {
+        setErrorTemporal(true);
         setError(`${detalle} Tus respuestas están guardadas: presiona «Finalizar examen» para reintentar.`);
       } else {
         setError("Hubo un problema al enviar tus respuestas. Intenta de nuevo.");
@@ -89,12 +120,9 @@ export default function ResponderExamen() {
   useEffect(() => {
     if (tiempoRestante !== 0 || autoEnviado.current || enviando) return;
 
-    const hayRespuestas = preguntas.some((p) => respuestas[p.id]?.trim());
-    if (!hayRespuestas) return;
-
     autoEnviado.current = true;
     enviarRespuestas();
-  }, [tiempoRestante, preguntas, respuestas, enviando, enviarRespuestas]);
+  }, [tiempoRestante, enviando, enviarRespuestas]);
 
   async function handleFinalizar() {
     setError("");
@@ -188,6 +216,7 @@ export default function ResponderExamen() {
                   <textarea
                     value={respuestas[p.id] || ""}
                     onChange={(e) => handleCambio(p.id, e.target.value)}
+                    onBlur={() => guardarRespuesta(p.id, respuestas[p.id] || "")}
                     className={`${ui.textarea} min-h-[120px]`}
                     placeholder="Escribe tu respuesta aquí..."
                   />
@@ -199,11 +228,11 @@ export default function ResponderExamen() {
 
         {error && <p className="mb-4 text-sm text-[#B3492E]">{error}</p>}
 
-        {tiempoRestante === 0 && (
+        {tiempoRestante === 0 && !errorTemporal && (
           <p className="mb-4 text-sm text-[#B3492E]">El tiempo del examen terminó. Ya no puedes enviar respuestas.</p>
         )}
 
-        <button onClick={handleFinalizar} disabled={enviando || tiempoRestante === 0} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
+        <button onClick={handleFinalizar} disabled={enviando || (tiempoRestante === 0 && !errorTemporal)} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
           {enviando ? "Enviando y calificando..." : "Finalizar examen"}
         </button>
       </div>
