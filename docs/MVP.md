@@ -4,7 +4,7 @@
 > **Producto:** Sistema de Evaluación Técnica Automatizada (MVP)
 > **Código:** PLU-MVP-2026-V1
 > **Alumno:** Roberto Guadalupe Cruz Zacatenco · G19X-UPTAP-RGCZ-984
-> **Estado:** Funcional e integrado (QA en curso)
+> **Estado:** Funcional e integrado (QA completado)
 
 ---
 
@@ -57,8 +57,9 @@ La IA es una herramienta de apoyo: **el evaluador humano decide cómo y cuándo 
 - Cada intento recibe un **token aleatorio** que el candidato lleva en la URL; las rutas del intento lo exigen (403 sin él).
 - Pantalla con las preguntas del examen: campo de texto para las abiertas y botones de radio para las de opción múltiple.
 - **Contador regresivo** con el tiempo límite del examen.
+- Las respuestas se **guardan al momento** (al cambiar de opción o al salir del campo de texto) y se recuperan si el candidato recarga la página.
 - Validación de que todas las preguntas estén respondidas antes de finalizar.
-- Al agotarse el tiempo, el sistema **envía automáticamente** las respuestas contestadas y las califica.
+- Al agotarse el tiempo, el sistema **envía automáticamente** las respuestas contestadas y las califica (si no hay ninguna, califica con 0).
 - Un intento no se puede calificar dos veces ni admite respuestas una vez calificado.
 - Mensaje claro cuando el examen aún no tiene preguntas.
 - Pantalla de confirmación al terminar (sin mostrar la calificación).
@@ -216,12 +217,13 @@ python crear_admin.py
 | Correcciones de seguridad (endpoints protegidos, rúbricas ocultas, doble calificación, `SECRET_KEY`) | ✅ Completado |
 | Repositorio GitHub + README + script de base de datos | ✅ Completado |
 | Pruebas manuales de casos límite (examen sin preguntas) | ✅ Completado y corregido |
-| Pruebas manuales restantes (respuesta vacía, candidato repetido, recarga a mitad de examen) | 🔄 En curso |
+| Pruebas manuales de casos límite (examen sin preguntas, respuesta vacía, candidato repetido, recarga a mitad de examen, examen mixto y examen que se vence) | ✅ Completado |
 | Manejo de errores y defensa del prompt en la IA | ✅ Completado |
 | Opción múltiple con calificación automática | ✅ Completado |
 | Tiempo límite del examen (contador, envío automático y rechazo al vencer) | ✅ Completado |
 | Pruebas automatizadas (pytest, Playwright) y CI/CD | ⏳ Pendiente |
-| Documentación técnica y de usuario, plan de mantenimiento, capacitación y cierre | 🔄 En curso |
+| Manual de usuario | ✅ Completado |
+| Documentación técnica, plan de mantenimiento, capacitación y cierre | 🔄 En curso |
 
 **MVP funcional.** El sistema completa el flujo de principio a fin: un evaluador arma un examen, un candidato lo presenta y la IA lo califica, dejando el resultado disponible en el panel. Las limitaciones conocidas están documentadas en el PRD (sección 4.22).
 
