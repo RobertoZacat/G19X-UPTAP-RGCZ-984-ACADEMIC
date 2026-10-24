@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+from typing import Optional
 from dotenv import load_dotenv
 from jose import jwt, JWTError
 import bcrypt
@@ -22,6 +23,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8  # 8 horas
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme_opcional = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
 
 
 def hash_password(password: str) -> str:
@@ -62,3 +64,15 @@ def obtener_usuario_actual(
         raise credenciales_invalidas
 
     return usuario
+
+
+def obtener_usuario_actual_opcional(
+    token: Optional[str] = Depends(oauth2_scheme_opcional),
+    db: Session = Depends(get_db)
+) -> Optional[models.Usuario]:
+    if not token:
+        return None
+    try:
+        return obtener_usuario_actual(token, db)
+    except HTTPException:
+        return None

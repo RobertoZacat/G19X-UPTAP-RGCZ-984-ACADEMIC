@@ -112,12 +112,18 @@ def guardar_respuesta(
 @router.get("/{intento_id}/respuestas", response_model=List[schemas.RespuestaOut])
 def listar_respuestas_de_intento(
     intento_id: int,
+    token: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    usuario_actual: models.Usuario = Depends(auth.obtener_usuario_actual)
+    usuario_actual: Optional[models.Usuario] = Depends(auth.obtener_usuario_actual_opcional)
 ):
     intento = db.query(models.Intento).filter(models.Intento.id == intento_id).first()
     if not intento:
         raise HTTPException(status_code=404, detail="Intento no encontrado")
+
+    if token:
+        _verificar_token_intento(intento, token)
+    elif not usuario_actual:
+        raise HTTPException(status_code=401, detail="Se requiere sesión o el token del intento")
 
     return db.query(models.Respuesta).filter(models.Respuesta.intento_id == intento_id).all()
 
