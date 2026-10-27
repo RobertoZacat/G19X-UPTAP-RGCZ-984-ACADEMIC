@@ -486,7 +486,7 @@ Se documentan de forma explícita para que el alcance real del MVP quede claro:
 **Funcionalidad**
 - Las respuestas se guardan al momento (al cambiar de opción o al salir del campo de texto) y se recuperan al recargar la página.
 - La calificación llama a la IA una pregunta a la vez; en exámenes largos el candidato espera varios segundos.
-- Se corrigió la duplicación de respuestas al reintentar el envío; queda por confirmar con pruebas si el error del segundo intento de un mismo candidato desapareció.
+- Se corrigió la duplicación de respuestas al reintentar el envío; el error del segundo intento de un mismo candidato quedó verificado con pruebas manuales (ver `docs/PRUEBAS.md`).
 - El backend no valida que la pregunta asignada pertenezca al mismo perfil del examen, ni evita asignarla dos veces (la interfaz sí lo evita).
 - El menú muestra "Usuarios" a todos los roles aunque el backend rechace al evaluador.
 - Un candidato elige su examen de la lista completa de exámenes.
