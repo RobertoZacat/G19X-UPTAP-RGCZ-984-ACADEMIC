@@ -83,6 +83,13 @@ def guardar_respuesta(
     if not pregunta:
         raise HTTPException(status_code=404, detail="Pregunta no encontrada")
 
+    asignada = db.query(models.ExamenPregunta).filter(
+        models.ExamenPregunta.examen_id == intento.examen_id,
+        models.ExamenPregunta.pregunta_id == respuesta.pregunta_id,
+    ).first()
+    if not asignada:
+        raise HTTPException(status_code=400, detail="La pregunta no pertenece al examen de este intento")
+
     if pregunta.tipo == "opcion_multiple" and pregunta.opciones:
         validas = {o.strip().casefold() for o in pregunta.opciones}
         if respuesta.respuesta_texto.strip().casefold() not in validas:
@@ -160,7 +167,7 @@ def calificar_intento(intento_id: int, token: Optional[str] = Query(None), db: S
     for pregunta in preguntas_examen:
         respuesta = respuestas_por_pregunta.get(pregunta.id)
 
-        if respuesta is None:
+        if respuesta is None or not (respuesta.respuesta_texto or "").strip():
             calificaciones.append(0.0)
             retroalimentaciones.append(f"Pregunta {pregunta.id}: Sin respuesta (0 puntos).")
             continue
