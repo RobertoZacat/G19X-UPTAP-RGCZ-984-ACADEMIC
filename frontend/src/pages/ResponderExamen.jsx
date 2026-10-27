@@ -93,12 +93,15 @@ export default function ResponderExamen() {
     setError("");
     setErrorTemporal(false);
     try {
-      const contestadas = preguntas.filter((p) => respuestas[p.id]?.trim());
-      for (const pregunta of contestadas) {
-        await api.post(`/intentos/${intentoId}/respuestas?token=${token}`, {
-          pregunta_id: pregunta.id,
-          respuesta_texto: respuestas[pregunta.id],
-        });
+      const vencido = tiempoRestante === 0;
+      if (!vencido) {
+        const contestadas = preguntas.filter((p) => respuestas[p.id]?.trim());
+        for (const pregunta of contestadas) {
+          await api.post(`/intentos/${intentoId}/respuestas?token=${token}`, {
+            pregunta_id: pregunta.id,
+            respuesta_texto: respuestas[pregunta.id],
+          });
+        }
       }
 
       await api.post(`/intentos/${intentoId}/calificar?token=${token}`);
@@ -107,15 +110,19 @@ export default function ResponderExamen() {
       const estado = err.response?.status;
       const detalle = err.response?.data?.detail;
 
-      if ((estado === 503 || estado === 502) && typeof detalle === "string") {
+      const esTemporal = estado === 503 || estado === 502 || !err.response;
+      if (esTemporal) {
         setErrorTemporal(true);
-        setError(`${detalle} Tus respuestas están guardadas: presiona «Finalizar examen» para reintentar.`);
+        const mensaje = typeof detalle === "string"
+          ? detalle
+          : "No se pudo conectar con el servidor.";
+        setError(`${mensaje} Tus respuestas están guardadas: presiona «Finalizar examen» para reintentar.`);
       } else {
         setError("Hubo un problema al enviar tus respuestas. Intenta de nuevo.");
       }
       setEnviando(false);
     }
-  }, [preguntas, respuestas, intentoId, navigate, token]);
+  }, [preguntas, respuestas, intentoId, navigate, token, tiempoRestante]);
 
   useEffect(() => {
     if (tiempoRestante !== 0 || autoEnviado.current || enviando) return;
