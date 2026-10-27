@@ -62,7 +62,7 @@ Copy-Item backend\.env.example backend\.env
 Copy-Item frontend\.env.example frontend\.env
 ```
 
-Luego abre `backend/.env` y llena los valores reales (están en "Accesos de prueba", en Mis documentos). El `frontend/.env` ya funciona con su valor por defecto para desarrollo local.
+Luego abre `backend/.env` y llena los valores reales. El `DATABASE_URL` ya coincide con el usuario y la base de `docker-compose.yml` (`eval_user` / `eval_pass` / `eval_tecnica`); solo necesitas tu `GEMINI_API_KEY` (de [aistudio.google.com/apikey](https://aistudio.google.com/apikey)) y un `SECRET_KEY`. El `frontend/.env` ya funciona con su valor por defecto para desarrollo local.
 
 Para `SECRET_KEY`, genera un valor aleatorio con:
 
