@@ -83,9 +83,13 @@ export default function ResponderExamen() {
     }
   }
 
-  function handleCambio(preguntaId, texto) {
+function handleCambio(preguntaId, texto) {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
     guardarRespuesta(preguntaId, texto);
+  }
+
+  function handleCambioAbierta(preguntaId, texto) {
+    setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
   }
 
   const enviarRespuestas = useCallback(async () => {
@@ -215,7 +219,7 @@ export default function ResponderExamen() {
                 ) : (
                   <textarea
                     value={respuestas[p.id] || ""}
-                    onChange={(e) => handleCambio(p.id, e.target.value)}
+                    onChange={(e) => handleCambioAbierta(p.id, e.target.value)}
                     onBlur={() => guardarRespuesta(p.id, respuestas[p.id] || "")}
                     className={`${ui.textarea} min-h-[120px]`}
                     placeholder="Escribe tu respuesta aquí..."
