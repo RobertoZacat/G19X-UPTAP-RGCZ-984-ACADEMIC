@@ -32,6 +32,10 @@ Este documento registra las pruebas manuales realizadas sobre el MVP. Cada caso 
 | 7 | Reintento tras vencimiento | Forzar un error 503 de la IA, esperar más de 30 s tras el límite y reintentar. | El reintento califica sin reenviar respuestas (no choca con el 409). | ✅ Se califica llamando directo a `/calificar`. | 26 oct · `bf95048` |
 | 8 | Guardado por tecla | Escribir en una pregunta abierta y observar las peticiones. | No se hace un POST por cada tecla; se guarda al salir del campo. | ✅ Se guarda solo al salir del campo (onBlur). | 26 oct · `2d032d2` |
 | 9 | Pregunta ajena al examen | Intentar guardar una respuesta con un `pregunta_id` que no pertenece al examen del intento. | El backend responde 400 y no guarda. | ✅ Responde 400 «La pregunta no pertenece al examen». | 26 oct · `6ae33ca` |
+| 10 | Cierre por tiempo con texto sin guardar | Escribir en una pregunta abierta y, sin salir del campo, dejar que el contador llegue a 0. | Se envía también el texto que se estaba escribiendo (lo pendiente) y se califica. | ✅ Se envía lo que cambió desde el último guardado y se califica. | 28 oct · `b8c5adf` |
+| 11 | Reintento con preguntas sin contestar | Dejar preguntas sin responder, forzar un 503 de la IA al vencer y pulsar «Finalizar examen». | El reintento llama a `/calificar` sin exigir responder todas las preguntas. | ✅ Califica (o navega a completado) sin exigir responder todo. | 28 oct · `b8c5adf` |
+| 12 | Error no temporal al calificar | Forzar un error no temporal al calificar (409 por doble calificación u otro código distinto de 502/503). | Si es 409, navega a la pantalla de completado; si es otro error, muestra qué hacer con el número de intento. | ✅ 409 lleva a completado; otro error muestra «avisa al reclutador (intento N)». | 28 oct · `f2f0925` |
+| 13 | Escribir, salir del campo y recargar | Responder una pregunta abierta, salir del campo (onBlur) y recargar la página. | La respuesta guardada al salir se recupera y rellena el campo. | ✅ El campo se rellena con lo guardado al salir del campo. | 28 oct · `b8c5adf` |
 
 ---
 
