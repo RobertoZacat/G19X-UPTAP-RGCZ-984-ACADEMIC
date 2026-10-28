@@ -134,6 +134,11 @@ export default function ResponderExamen() {
       const estado = err.response?.status;
       const detalle = err.response?.data?.detail;
 
+      if (estado === 409) {
+        navigate(`/examen/${intentoId}/completado`);
+        return;
+      }
+
       const esTemporal = estado === 503 || estado === 502 || !err.response;
       if (esTemporal) {
         setErrorTemporal(true);
@@ -142,7 +147,7 @@ export default function ResponderExamen() {
           : "No se pudo conectar con el servidor.";
         setError(`${mensaje} Tus respuestas están guardadas: presiona «Finalizar examen» para reintentar.`);
       } else {
-        setError("Hubo un problema al enviar tus respuestas. Intenta de nuevo.");
+        setError(`No pudimos calificar tu examen. Tus respuestas están guardadas: avisa al reclutador (intento ${intentoId}).`);
       }
       setEnviando(false);
     }
