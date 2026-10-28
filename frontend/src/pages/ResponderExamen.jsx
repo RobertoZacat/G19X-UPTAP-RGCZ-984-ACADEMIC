@@ -18,6 +18,7 @@ export default function ResponderExamen() {
   const [errorTemporal, setErrorTemporal] = useState(false);
   const [tiempoRestante, setTiempoRestante] = useState(null);
   const autoEnviado = useRef(false);
+  const guardadoRef = useRef({});
 
   useEffect(() => {
     async function cargar() {
@@ -39,6 +40,7 @@ export default function ResponderExamen() {
           guardadas[r.pregunta_id] = r.respuesta_texto;
         });
         setRespuestas(guardadas);
+        guardadoRef.current = guardadas;
       } catch (err) {
         setError("No se pudo cargar el examen.");
       } finally {
@@ -75,6 +77,7 @@ export default function ResponderExamen() {
         pregunta_id: preguntaId,
         respuesta_texto: texto,
       });
+      guardadoRef.current = { ...guardadoRef.current, [preguntaId]: texto };
     } catch (err) {
       const estado = err.response?.status;
       if (estado === 409) {
@@ -83,7 +86,14 @@ export default function ResponderExamen() {
     }
   }
 
-function handleCambio(preguntaId, texto) {
+  function guardarAbierta(preguntaId) {
+    const valor = respuestas[preguntaId] || "";
+    if (valor === (guardadoRef.current[preguntaId] || "")) return;
+    if (!valor.trim() && !guardadoRef.current[preguntaId]) return;
+    guardarRespuesta(preguntaId, valor);
+  }
+
+  function handleCambio(preguntaId, texto) {
     setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
     guardarRespuesta(preguntaId, texto);
   }
@@ -97,14 +107,24 @@ function handleCambio(preguntaId, texto) {
     setError("");
     setErrorTemporal(false);
     try {
-      const vencido = tiempoRestante === 0;
-      if (!vencido) {
-        const contestadas = preguntas.filter((p) => respuestas[p.id]?.trim());
-        for (const pregunta of contestadas) {
+      const pendientes = preguntas.filter((p) => {
+        const actual = respuestas[p.id] || "";
+        if (!actual.trim()) return false;
+        return actual !== (guardadoRef.current[p.id] || "");
+      });
+
+      for (const pregunta of pendientes) {
+        try {
           await api.post(`/intentos/${intentoId}/respuestas?token=${token}`, {
             pregunta_id: pregunta.id,
             respuesta_texto: respuestas[pregunta.id],
           });
+          guardadoRef.current = {
+            ...guardadoRef.current,
+            [pregunta.id]: respuestas[pregunta.id],
+          };
+        } catch (err) {
+          if (err.response?.status !== 409) throw err;
         }
       }
 
@@ -126,7 +146,7 @@ function handleCambio(preguntaId, texto) {
       }
       setEnviando(false);
     }
-  }, [preguntas, respuestas, intentoId, navigate, token, tiempoRestante]);
+  }, [preguntas, respuestas, intentoId, navigate, token]);
 
   useEffect(() => {
     if (tiempoRestante !== 0 || autoEnviado.current || enviando) return;
@@ -138,10 +158,12 @@ function handleCambio(preguntaId, texto) {
   async function handleFinalizar() {
     setError("");
 
-    const faltantes = preguntas.filter((p) => !respuestas[p.id]?.trim());
-    if (faltantes.length > 0) {
-      setError("Responde todas las preguntas antes de finalizar.");
-      return;
+    if (tiempoRestante !== 0) {
+      const faltantes = preguntas.filter((p) => !respuestas[p.id]?.trim());
+      if (faltantes.length > 0) {
+        setError("Responde todas las preguntas antes de finalizar.");
+        return;
+      }
     }
 
     await enviarRespuestas();
@@ -227,7 +249,7 @@ function handleCambio(preguntaId, texto) {
                   <textarea
                     value={respuestas[p.id] || ""}
                     onChange={(e) => handleCambioAbierta(p.id, e.target.value)}
-                    onBlur={() => guardarRespuesta(p.id, respuestas[p.id] || "")}
+                    onBlur={() => guardarAbierta(p.id)}
                     className={`${ui.textarea} min-h-[120px]`}
                     placeholder="Escribe tu respuesta aquí..."
                   />
