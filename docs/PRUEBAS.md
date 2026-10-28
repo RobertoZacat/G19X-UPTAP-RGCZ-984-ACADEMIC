@@ -44,3 +44,24 @@ Este documento registra las pruebas manuales realizadas sobre el MVP. Cada caso 
 - Las pruebas se realizaron de forma manual, sin suite automatizada (pytest/Playwright quedan pendientes, ver `docs/PRD.md` §4.22).
 - Para forzar fallas de la IA se desconfiguró `GEMINI_API_KEY` o se usó un modelo inexistente, y luego se restauró para reintentar.
 - Los commits referidos corresponden a la rama en la que se aplicó cada corrección.
+
+---
+
+## 4. Instalación limpia
+
+Bitácora de reproducibilidad: se clonó el repositorio en una carpeta vacía y se siguió únicamente el `README.md`. Commit instalado: `e4d7515` (28 oct).
+
+| Paso (según README) | Resultado |
+|---|---|
+| `git clone` en una carpeta limpia | ✅ El repositorio llega sin `backend/.env`, `venv` ni `node_modules` (los ignora `.gitignore`). |
+| `docker compose up -d` | ⚠️ El puerto 5432 ya estaba ocupado por el contenedor local de desarrollo (`eval-tecnica-db-1`). Para no interferir, esta prueba levantó la base limpia sobre el puerto 5433. Sin ese choque, queda tal cual lo indica el README. |
+| Importar `db/base-de-datos.sql` | ✅ Importa sin errores y quedan las 9 tablas (`candidatos`, `examen_preguntas`, `examenes`, `intentos`, `perfiles`, `preguntas`, `respuestas`, `resultados`, `usuarios`). |
+| Copiar y llenar los `.env` | ✅ Solo hizo falta `GEMINI_API_KEY` y `SECRET_KEY`; el `DATABASE_URL` ya coincide con el usuario y la base del compose. |
+| Backend: venv + `pip install -r requirements.txt` | ✅ Instala todas las dependencias sin errores. |
+| `uvicorn app.main:app` | ✅ Arranca y `GET /health` responde `{"status":"ok"}` (se usó el puerto 8011 para no chocar con el backend local en 8000). |
+| `POST /login` con `admin@develop.com.mx` | ✅ Devuelve `access_token`, lo que verifica de punta a punta la conexión a la base y el hash de contraseña. |
+| Frontend: `npm install` y `npm run dev` | ✅ Instala 72 paquetes y compila el build de Vite sin errores. |
+
+Notas de esta prueba:
+- La calificación con IA no se ejecutó porque el `GEMINI_API_KEY` era de relleno (no una clave real de Gemini); sí se verificó el arranque, la base y todo lo demás.
+- Las dos variaciones frente al README (puertos 5433 y 8011) son solo para no interferir con los servicios de desarrollo ya levantados en esta misma máquina.
