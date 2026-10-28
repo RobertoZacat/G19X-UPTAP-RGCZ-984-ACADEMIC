@@ -467,7 +467,7 @@ Pendiente de implementar: ver sección 4.22.
 | FASE 7 | Pulido: CRUD completo, validaciones, variables de entorno, responsive, estados de carga | ✅ Completado |
 | FASE 8 | Repositorio GitHub, README, script de base de datos y `.env.example` | ✅ Completado |
 | FASE 9 | Correcciones de seguridad: endpoints protegidos, rúbricas ocultas al candidato, doble calificación y `SECRET_KEY` obligatoria | ✅ Completado |
-| QA | Pruebas de casos límite (examen sin preguntas ✅; respuesta vacía ✅; candidato repetido ✅; recarga a mitad de examen ✅; examen mixto ✅; examen que se vence ✅) | ✅ Completado |
+| QA | Pruebas de casos límite registradas en `docs/PRUEBAS.md` (examen sin preguntas, respuesta vacía, candidato repetido, recarga a mitad de examen, examen mixto, vencimiento, reintento tras vencimiento, guardado por tecla, pregunta ajena, cierre por tiempo y error no temporal) | ✅ Completado |
 | Documentación | Manual de usuario ✅; informe técnico y manual técnico | 🔄 En curso |
 | Mantenimiento | Plan de mantenimiento y soporte multinivel | ⏳ Pendiente |
 | Cierre | Capacitación, acta y evaluación post-implementación | ⏳ Pendiente |

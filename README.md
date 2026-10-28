@@ -120,6 +120,7 @@ Se abre en http://localhost:5173
 - **Manual de usuario:** [`docs/MANUAL_USUARIO.md`](docs/MANUAL_USUARIO.md)
 - **Requerimientos (PRD):** [`docs/PRD.md`](docs/PRD.md)
 - **Alcance del MVP:** [`docs/MVP.md`](docs/MVP.md)
+- **Registro de pruebas manuales:** [`docs/PRUEBAS.md`](docs/PRUEBAS.md)
 
 ## Estructura del proyecto
 

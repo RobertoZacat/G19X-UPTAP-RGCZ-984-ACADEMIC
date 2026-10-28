@@ -116,9 +116,9 @@ El candidato **no necesita cuenta**. Presenta su examen desde un enlace público
 
 ### 4.3 Al agotarse el tiempo
 
-- Al llegar a cero, el sistema **envía automáticamente** las respuestas contestadas y las califica.
+- Al llegar a cero, el sistema **envía automáticamente** las respuestas contestadas (incluida la que aún estás escribiendo) y las califica.
 - Si no contestaste nada, el intento se califica con **0**.
-- Si el servicio de IA está saturado, verás un mensaje y podrás **reintentar** con el botón **Finalizar examen**.
+- Si el servicio de IA está saturado, verás un mensaje y podrás **reintentar** con el botón **Finalizar examen** (aunque falten preguntas por responder).
 
 ### 4.4 Confirmación
 
