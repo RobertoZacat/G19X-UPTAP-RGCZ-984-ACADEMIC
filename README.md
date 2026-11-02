@@ -118,6 +118,7 @@ Se abre en http://localhost:5173
   - usuario: `admin@develop.com.mx`
   - contraseña: `claveSegura123`
 - **Presentar examen (sin login):** http://localhost:5173/presentar
+  - El examen **«Examen demo de opción múltiple (sin IA)»** se califica solo, sin llave de Gemini: sirve para probar el ciclo completo recién instalado.
 
 ## Documentación
 
