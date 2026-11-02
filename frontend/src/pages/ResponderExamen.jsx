@@ -45,7 +45,7 @@ export default function ResponderExamen() {
         });
         setRespuestas(guardadas);
         guardadoRef.current = guardadas;
-      } catch (err) {
+      } catch {
         setError("No se pudo cargar el examen.");
       } finally {
         setCargandoInicial(false);

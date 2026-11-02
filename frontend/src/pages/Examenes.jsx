@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
-import { useConfirm, useToast } from "../components/Feedback";
+import { useConfirm, useToast } from "../components/feedback-context";
 
 export default function Examenes() {
   const [examenes, setExamenes] = useState([]);
@@ -23,20 +23,23 @@ export default function Examenes() {
   const [preguntasPorExamen, setPreguntasPorExamen] = useState({});
   const [preguntaSeleccionada, setPreguntaSeleccionada] = useState("");
 
-  async function cargarDatos() {
-    const [resExamenes, resPerfiles, resPreguntas] = await Promise.all([
-      api.get("/examenes"),
-      api.get("/perfiles"),
-      api.get("/preguntas"),
-    ]);
+  function obtenerDatos() {
+    return Promise.all([api.get("/examenes"), api.get("/perfiles"), api.get("/preguntas")]);
+  }
+
+  function aplicarDatos([resExamenes, resPerfiles, resPreguntas]) {
     setExamenes(resExamenes.data);
     setPerfiles(resPerfiles.data);
     setPreguntas(resPreguntas.data);
     setCargandoLista(false);
   }
 
+  async function cargarDatos() {
+    aplicarDatos(await obtenerDatos());
+  }
+
   useEffect(() => {
-    cargarDatos();
+    obtenerDatos().then(aplicarDatos);
   }, []);
 
   function nombrePerfil(id) {
@@ -80,7 +83,7 @@ export default function Examenes() {
 
       limpiarFormulario();
       cargarDatos();
-    } catch (err) {
+    } catch {
       setError("No se pudo guardar el examen. Verifica los datos.");
     } finally {
       setCargando(false);

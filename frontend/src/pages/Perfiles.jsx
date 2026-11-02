@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
-import { useConfirm, useToast } from "../components/Feedback";
+import { useConfirm, useToast } from "../components/feedback-context";
 
 export default function Perfiles() {
   const [perfiles, setPerfiles] = useState([]);
@@ -15,14 +15,17 @@ export default function Perfiles() {
   const confirmar = useConfirm();
   const avisar = useToast();
 
-  async function cargarPerfiles() {
-    const res = await api.get("/perfiles");
+  function aplicarPerfiles(res) {
     setPerfiles(res.data);
     setCargandoLista(false);
   }
 
+  async function cargarPerfiles() {
+    aplicarPerfiles(await api.get("/perfiles"));
+  }
+
   useEffect(() => {
-    cargarPerfiles();
+    api.get("/perfiles").then(aplicarPerfiles);
   }, []);
 
   function limpiarFormulario() {
@@ -52,7 +55,7 @@ export default function Perfiles() {
       }
       limpiarFormulario();
       cargarPerfiles();
-    } catch (err) {
+    } catch {
       setError("No se pudo guardar el perfil. Verifica los datos.");
     } finally {
       setCargando(false);

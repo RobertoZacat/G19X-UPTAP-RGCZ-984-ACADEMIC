@@ -1,6 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-
-const FeedbackContext = createContext(null);
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FeedbackContext } from "./feedback-context";
 
 const COLOR_BORDE_TOAST = {
   error: "border-l-[color:var(--error)]",
@@ -132,12 +131,4 @@ export function FeedbackProvider({ children }) {
       </div>
     </FeedbackContext.Provider>
   );
-}
-
-export function useConfirm() {
-  return useContext(FeedbackContext).confirmar;
-}
-
-export function useToast() {
-  return useContext(FeedbackContext).avisar;
 }
