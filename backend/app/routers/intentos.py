@@ -153,6 +153,7 @@ def calificar_intento(intento_id: int, token: Optional[str] = Query(None), db: S
         db.query(models.Pregunta)
         .join(models.ExamenPregunta)
         .filter(models.ExamenPregunta.examen_id == intento.examen_id)
+        .order_by(models.ExamenPregunta.orden, models.Pregunta.id)
         .all()
     )
 
@@ -164,12 +165,14 @@ def calificar_intento(intento_id: int, token: Optional[str] = Query(None), db: S
     calificaciones = []
     retroalimentaciones = []
 
-    for pregunta in preguntas_examen:
+    # Se numeran por su posición en el examen (el mismo orden que ve el candidato),
+    # no por su id en la base de datos.
+    for numero, pregunta in enumerate(preguntas_examen, start=1):
         respuesta = respuestas_por_pregunta.get(pregunta.id)
 
         if respuesta is None or not (respuesta.respuesta_texto or "").strip():
             calificaciones.append(0.0)
-            retroalimentaciones.append(f"Pregunta {pregunta.id}: Sin respuesta (0 puntos).")
+            retroalimentaciones.append(f"Pregunta {numero}: Sin respuesta (0 puntos).")
             continue
 
         if pregunta.tipo == "opcion_multiple" and pregunta.respuesta_correcta:
@@ -189,7 +192,7 @@ def calificar_intento(intento_id: int, token: Optional[str] = Query(None), db: S
                 raise HTTPException(status_code=codigo, detail=str(e))
 
         calificaciones.append(resultado["calificacion"])
-        retroalimentaciones.append(f"Pregunta {pregunta.id}: {resultado['retroalimentacion']}")
+        retroalimentaciones.append(f"Pregunta {numero}: {resultado['retroalimentacion']}")
 
     nuevo_resultado = models.Resultado(
         intento_id=intento_id,

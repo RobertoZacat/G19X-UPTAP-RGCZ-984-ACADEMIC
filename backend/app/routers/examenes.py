@@ -62,6 +62,7 @@ def listar_preguntas_de_examen(examen_id: int, db: Session = Depends(get_db)):
         db.query(models.Pregunta)
         .join(models.ExamenPregunta)
         .filter(models.ExamenPregunta.examen_id == examen_id)
+        .order_by(models.ExamenPregunta.orden, models.Pregunta.id)
         .all()
     )
     return preguntas
