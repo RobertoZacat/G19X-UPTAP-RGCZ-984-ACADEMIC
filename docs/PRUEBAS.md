@@ -36,13 +36,15 @@ Este documento registra las pruebas manuales realizadas sobre el MVP. Cada caso 
 | 11 | Reintento con preguntas sin contestar | Dejar preguntas sin responder, forzar un 503 de la IA al vencer y pulsar «Finalizar examen». | El reintento llama a `/calificar` sin exigir responder todas las preguntas. | ✅ Califica (o navega a completado) sin exigir responder todo. | 28 oct · `b8c5adf` |
 | 12 | Error no temporal al calificar | Forzar un error no temporal al calificar (409 por doble calificación u otro código distinto de 502/503). | Si es 409, navega a la pantalla de completado; si es otro error, muestra qué hacer con el número de intento. | ✅ 409 lleva a completado; otro error muestra «avisa al reclutador (intento N)». | 28 oct · `f2f0925` |
 | 13 | Escribir, salir del campo y recargar | Responder una pregunta abierta, salir del campo (onBlur) y recargar la página. | La respuesta guardada al salir se recupera y rellena el campo. | ✅ El campo se rellena con lo guardado al salir del campo. | 28 oct · `b8c5adf` |
+| 14 | Error permanente de la IA (502) | Dejar `GEMINI_API_KEY` vacía (o poner un modelo inexistente), presentar un examen con una pregunta abierta y finalizar. | El backend responde 502 y el frontend **no** ofrece reintentar: muestra «avisa al reclutador (intento N)». Solo el 503 y la falta de red se ofrecen como reintentables. | ⏳ Pendiente de verificar. | — |
 
 ---
 
 ## 3. Notas
 
 - Las pruebas se realizaron de forma manual, sin suite automatizada (pytest/Playwright quedan pendientes, ver `docs/PRD.md` §4.22).
-- Para forzar fallas de la IA se desconfiguró `GEMINI_API_KEY` o se usó un modelo inexistente, y luego se restauró para reintentar.
+- Desconfigurar `GEMINI_API_KEY` o usar un modelo inexistente produce un **502** (error permanente de la IA), no un 503: sirve para el caso 14, no para los casos 7 y 11. El **503** solo aparece cuando Gemini responde saturación (429/500/502/503/504) y se agotan los reintentos y el modelo de respaldo (`backend/app/ia.py`).
+- Hasta el commit `c4ff204` el frontend trataba el 502 igual que el 503 (como reintentable); desde la corrección del caso 14 el 502 lleva al mensaje de «avisa al reclutador».
 - Los commits referidos corresponden a la rama en la que se aplicó cada corrección.
 
 ---
