@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
-import { useConfirm, useToast } from "../components/Feedback";
+import { useConfirm, useToast } from "../components/feedback-context";
 
 export default function Examenes() {
   const [examenes, setExamenes] = useState([]);
@@ -23,20 +23,23 @@ export default function Examenes() {
   const [preguntasPorExamen, setPreguntasPorExamen] = useState({});
   const [preguntaSeleccionada, setPreguntaSeleccionada] = useState("");
 
-  async function cargarDatos() {
-    const [resExamenes, resPerfiles, resPreguntas] = await Promise.all([
-      api.get("/examenes"),
-      api.get("/perfiles"),
-      api.get("/preguntas"),
-    ]);
+  function obtenerDatos() {
+    return Promise.all([api.get("/examenes"), api.get("/perfiles"), api.get("/preguntas")]);
+  }
+
+  function aplicarDatos([resExamenes, resPerfiles, resPreguntas]) {
     setExamenes(resExamenes.data);
     setPerfiles(resPerfiles.data);
     setPreguntas(resPreguntas.data);
     setCargandoLista(false);
   }
 
+  async function cargarDatos() {
+    aplicarDatos(await obtenerDatos());
+  }
+
   useEffect(() => {
-    cargarDatos();
+    obtenerDatos().then(aplicarDatos);
   }, []);
 
   function nombrePerfil(id) {
@@ -80,7 +83,7 @@ export default function Examenes() {
 
       limpiarFormulario();
       cargarDatos();
-    } catch (err) {
+    } catch {
       setError("No se pudo guardar el examen. Verifica los datos.");
     } finally {
       setCargando(false);
@@ -240,7 +243,7 @@ export default function Examenes() {
                         <div>
                           <span className={ui.pillAccent}>{nombrePerfil(ex.perfil_id)}</span>
                           <p className="mt-2 mb-0.5 text-[15px] font-semibold text-[#1C1E1B]">{ex.titulo}</p>
-                          <p className="m-0 text-[13px] text-[#5C5B54]">{ex.tiempo_limite_min} minutos</p>
+                          <p className="m-0 text-[13px] text-[#5C5B54]">{ex.tiempo_limite_min} minuto{ex.tiempo_limite_min !== 1 ? "s" : ""}</p>
                         </div>
                         <span className="pt-1 text-xl leading-none text-[#5C5B54]">{examenExpandido === ex.id ? "−" : "+"}</span>
                       </button>

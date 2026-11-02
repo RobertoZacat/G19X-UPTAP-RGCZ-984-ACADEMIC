@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth-context";
 import { ui } from "../ui/tailwind";
 
 export default function Login() {
@@ -29,7 +29,7 @@ export default function Login() {
 
       login(response.data.access_token);
       navigate("/perfiles");
-    } catch (err) {
+    } catch {
       setError("Email o contraseña incorrectos");
     } finally {
       setCargando(false);

@@ -46,6 +46,7 @@ Este documento registra las pruebas manuales realizadas sobre el MVP. Cada caso 
 - Desconfigurar `GEMINI_API_KEY` o usar un modelo inexistente produce un **502** (error permanente de la IA), no un 503: sirve para el caso 14, no para los casos 7 y 11. El **503** solo aparece cuando Gemini responde saturación (429/500/502/503/504) y se agotan los reintentos y el modelo de respaldo (`backend/app/ia.py`).
 - Hasta el commit `c4ff204` el frontend trataba el 502 igual que el 503 (como reintentable); desde la corrección del caso 14 el 502 lleva al mensaje de «avisa al reclutador».
 - Los commits referidos corresponden a la rama en la que se aplicó cada corrección.
+- **Margen de 30 s tras el límite (decisión de diseño).** El backend acepta respuestas hasta 30 s después del tiempo límite (`MARGEN_LATENCIA_SEGUNDOS` en `backend/app/routers/intentos.py`). El margen existe para que llegue lo que el candidato escribía justo en 0:00, aunque la red tarde (caso 10). Desde que el frontend bloquea las opciones y los campos de texto al llegar a 0:00, ya no se puede contestar tarde desde la interfaz; solo quedaría llamando a la API directamente con el token del intento, dentro de esos 30 s.
 
 ---
 

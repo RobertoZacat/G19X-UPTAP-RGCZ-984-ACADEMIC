@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { ui } from "../ui/tailwind";
-import { useConfirm, useToast } from "../components/Feedback";
+import { useConfirm, useToast } from "../components/feedback-context";
 
 function mensajeDeError(err, porDefecto) {
   const detalle = err.response?.data?.detail;
@@ -35,18 +35,22 @@ export default function Preguntas() {
   const correctaValida = opcionesLista.includes(respuestaCorrecta) ? respuestaCorrecta : "";
   const esOpcionMultiple = tipo === "opcion_multiple";
 
-  async function cargarDatos() {
-    const [resPreguntas, resPerfiles] = await Promise.all([
-      api.get("/preguntas"),
-      api.get("/perfiles"),
-    ]);
+  function obtenerDatos() {
+    return Promise.all([api.get("/preguntas"), api.get("/perfiles")]);
+  }
+
+  function aplicarDatos([resPreguntas, resPerfiles]) {
     setPreguntas(resPreguntas.data);
     setPerfiles(resPerfiles.data);
     setCargandoLista(false);
   }
 
+  async function cargarDatos() {
+    aplicarDatos(await obtenerDatos());
+  }
+
   useEffect(() => {
-    cargarDatos();
+    obtenerDatos().then(aplicarDatos);
   }, []);
 
   function nombrePerfil(perfilId) {

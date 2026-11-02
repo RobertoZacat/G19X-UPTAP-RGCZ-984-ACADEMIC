@@ -32,7 +32,7 @@ export default function PresentarExamen() {
       });
 
       navigate(`/examen/${resIntento.data.id}?token=${resIntento.data.token}`);
-    } catch (err) {
+    } catch {
       setError("No se pudo iniciar el examen. Intenta de nuevo.");
     } finally {
       setCargando(false);

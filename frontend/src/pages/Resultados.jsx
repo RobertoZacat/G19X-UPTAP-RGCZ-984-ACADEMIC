@@ -1,20 +1,15 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
-import { ui } from "../ui/tailwind";
 
 export default function Resultados() {
   const [resultados, setResultados] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  async function cargarResultados() {
-    setCargando(true);
-    const res = await api.get("/resultados");
-    setResultados(res.data);
-    setCargando(false);
-  }
-
   useEffect(() => {
-    cargarResultados();
+    api.get("/resultados").then((res) => {
+      setResultados(res.data);
+      setCargando(false);
+    });
   }, []);
 
   function colorCalificacion(nota) {
