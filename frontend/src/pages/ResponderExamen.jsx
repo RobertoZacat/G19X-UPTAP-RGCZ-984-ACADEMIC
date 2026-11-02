@@ -20,6 +20,10 @@ export default function ResponderExamen() {
   const autoEnviado = useRef(false);
   const guardadoRef = useRef({});
 
+  // Al llegar a 0:00 (o mientras se envía) ya no se puede contestar.
+  const tiempoTerminado = tiempoRestante === 0;
+  const bloqueado = tiempoTerminado || enviando;
+
   useEffect(() => {
     async function cargar() {
       try {
@@ -94,11 +98,13 @@ export default function ResponderExamen() {
   }
 
   function handleCambio(preguntaId, texto) {
+    if (bloqueado) return;
     setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
     guardarRespuesta(preguntaId, texto);
   }
 
   function handleCambioAbierta(preguntaId, texto) {
+    if (bloqueado) return;
     setRespuestas((prev) => ({ ...prev, [preguntaId]: texto }));
   }
 
@@ -231,10 +237,12 @@ export default function ResponderExamen() {
                       return (
                         <label
                           key={op}
-                          className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 text-sm transition ${
+                          className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-sm transition ${
+                            bloqueado ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+                          } ${
                             seleccionada
                               ? "border-[#2D5F4C] bg-[#EAF1EE]"
-                              : "border-[#DCD9D0] bg-white hover:bg-[#F7F6F3]"
+                              : `border-[#DCD9D0] bg-white ${bloqueado ? "" : "hover:bg-[#F7F6F3]"}`
                           }`}
                         >
                           <input
@@ -242,6 +250,7 @@ export default function ResponderExamen() {
                             name={`pregunta-${p.id}`}
                             value={op}
                             checked={seleccionada}
+                            disabled={bloqueado}
                             onChange={() => handleCambio(p.id, op)}
                             className="mt-0.5 accent-[#2D5F4C]"
                           />
@@ -255,7 +264,8 @@ export default function ResponderExamen() {
                     value={respuestas[p.id] || ""}
                     onChange={(e) => handleCambioAbierta(p.id, e.target.value)}
                     onBlur={() => guardarAbierta(p.id)}
-                    className={`${ui.textarea} min-h-[120px]`}
+                    disabled={bloqueado}
+                    className={`${ui.textarea} min-h-[120px] disabled:cursor-not-allowed disabled:bg-[#F7F6F3] disabled:text-[#5C5B54]`}
                     placeholder="Escribe tu respuesta aquí..."
                   />
                 )}
@@ -266,11 +276,15 @@ export default function ResponderExamen() {
 
         {error && <p className="mb-4 text-sm text-[#B3492E]">{error}</p>}
 
-        {tiempoRestante === 0 && !errorTemporal && (
-          <p className="mb-4 text-sm text-[#B3492E]">El tiempo del examen terminó. Ya no puedes enviar respuestas.</p>
+        {enviando ? (
+          <p className="mb-4 text-sm text-[#5C5B54]">Enviando tus respuestas…</p>
+        ) : (
+          tiempoTerminado && !errorTemporal && (
+            <p className="mb-4 text-sm text-[#B3492E]">El tiempo del examen terminó. Ya no puedes modificar tus respuestas.</p>
+          )
         )}
 
-        <button onClick={handleFinalizar} disabled={enviando || (tiempoRestante === 0 && !errorTemporal)} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
+        <button onClick={handleFinalizar} disabled={enviando || (tiempoTerminado && !errorTemporal)} className="w-full rounded-lg bg-[#2D5F4C] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[#24493C] disabled:cursor-not-allowed disabled:opacity-70">
           {enviando ? "Enviando y calificando..." : "Finalizar examen"}
         </button>
       </div>
