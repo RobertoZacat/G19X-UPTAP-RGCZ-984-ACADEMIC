@@ -240,7 +240,7 @@ export default function Examenes() {
                         <div>
                           <span className={ui.pillAccent}>{nombrePerfil(ex.perfil_id)}</span>
                           <p className="mt-2 mb-0.5 text-[15px] font-semibold text-[#1C1E1B]">{ex.titulo}</p>
-                          <p className="m-0 text-[13px] text-[#5C5B54]">{ex.tiempo_limite_min} minutos</p>
+                          <p className="m-0 text-[13px] text-[#5C5B54]">{ex.tiempo_limite_min} minuto{ex.tiempo_limite_min !== 1 ? "s" : ""}</p>
                         </div>
                         <span className="pt-1 text-xl leading-none text-[#5C5B54]">{examenExpandido === ex.id ? "−" : "+"}</span>
                       </button>
