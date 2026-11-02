@@ -139,7 +139,9 @@ export default function ResponderExamen() {
         return;
       }
 
-      const esTemporal = estado === 503 || estado === 502 || !err.response;
+      // Solo el 503 (IA saturada) y la falta de red tienen sentido reintentarse.
+      // El backend usa el 502 para errores permanentes de la IA (llave mala, modelo inexistente).
+      const esTemporal = estado === 503 || !err.response;
       if (esTemporal) {
         setErrorTemporal(true);
         const mensaje = typeof detalle === "string"
