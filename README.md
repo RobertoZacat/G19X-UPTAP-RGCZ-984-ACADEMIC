@@ -72,6 +72,10 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 Copia el resultado en `SECRET_KEY=`. Sin esta variable, el backend no arranca.
 
+`CORS_ORIGINS` lista, separados por coma, los orígenes desde los que el frontend puede llamar al backend. El ejemplo ya incluye `localhost` y `127.0.0.1` en los puertos 5173 y 5174. Si Vite abre en otro puerto (lo indica en la terminal al ejecutar `npm run dev`), agrégalo ahí y reinicia el backend; si no, la interfaz carga pero ninguna llamada responde.
+
+> En Windows, `pip install -r requirements.txt` omite `uvloop` automáticamente (no existe para Windows y uvicorn no lo necesita).
+
 ## Cómo instalarlo y ejecutarlo
 
 ### Backend
