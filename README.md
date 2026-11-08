@@ -34,8 +34,11 @@ docker compose exec -T db psql -U eval_user -d eval_tecnica < db/base-de-datos.s
 
 **Windows (PowerShell):**
 ```
-Get-Content db/base-de-datos.sql | docker compose exec -T db psql -U eval_user -d eval_tecnica
+docker compose cp db/base-de-datos.sql db:/tmp/base-de-datos.sql
+docker compose exec -T db psql -U eval_user -d eval_tecnica -f /tmp/base-de-datos.sql
 ```
+
+> En Windows no uses `Get-Content ... | docker compose exec ...`: PowerShell 5.1 lee el archivo con otra codificación y los acentos quedan dañados en la base (por ejemplo, «opciÃ³n» en vez de «opción»). Copiar el archivo al contenedor y leerlo con `psql -f` lo importa tal cual.
 
 > Si ya tenías la base de datos de una versión anterior, recréala antes de importar: `create_all` no agrega columnas nuevas a tablas existentes. Borra el volumen y vuelve a levantarlo:
 >
