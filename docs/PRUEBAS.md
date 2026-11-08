@@ -52,19 +52,29 @@ Este documento registra las pruebas manuales realizadas sobre el MVP. Cada caso 
 
 ## 4. Instalación limpia
 
-Bitácora de reproducibilidad: se clonó el repositorio en una carpeta vacía y se siguió únicamente el `README.md`. Commit instalado: `e4d7515` (28 oct).
+Bitácora de reproducibilidad: se clonó el repositorio desde GitHub en una carpeta nueva (`C:\Users\...\Desktop\prueba-limpia`), sin `.env`, `venv` ni `node_modules`, y se siguió únicamente el `README.md`.
+
+- **Fecha:** 7 nov 2026
+- **Sistema:** Windows 11 Pro (10.0.26300), Windows PowerShell 5.1, Docker Desktop (Docker 29.9, Compose v5.6)
+- **Versiones:** Python 3.12.0, Node 26.13.0, npm 11.20.0
+- **Commit instalado:** `3d9de68` (2 nov), más la corrección del comando de importación del README hecha en esta misma rama (ver la fila de «Importar»).
+- **Puertos:** los del README (5432, 8000 y 5173). Antes de empezar se apagaron la base, el backend y el frontend de desarrollo de esta máquina (`docker compose down` en la carpeta de trabajo) para no cambiar nada.
 
 | Paso (según README) | Resultado |
 |---|---|
-| `git clone` en una carpeta limpia | ✅ El repositorio llega sin `backend/.env`, `venv` ni `node_modules` (los ignora `.gitignore`). |
-| `docker compose up -d` | ⚠️ El puerto 5432 ya estaba ocupado por el contenedor local de desarrollo (`eval-tecnica-db-1`). Para no interferir, esta prueba levantó la base limpia sobre el puerto 5433. Sin ese choque, queda tal cual lo indica el README. |
-| Importar `db/base-de-datos.sql` | ✅ Importa sin errores y quedan las 9 tablas (`candidatos`, `examen_preguntas`, `examenes`, `intentos`, `perfiles`, `preguntas`, `respuestas`, `resultados`, `usuarios`). |
-| Copiar y llenar los `.env` | ✅ Solo hizo falta `GEMINI_API_KEY` y `SECRET_KEY`; el `DATABASE_URL` ya coincide con el usuario y la base del compose. |
-| Backend: venv + `pip install -r requirements.txt` | ✅ Instala todas las dependencias sin errores. |
-| `uvicorn app.main:app` | ✅ Arranca y `GET /health` responde `{"status":"ok"}` (se usó el puerto 8011 para no chocar con el backend local en 8000). |
-| `POST /login` con `admin@develop.com.mx` | ✅ Devuelve `access_token`, lo que verifica de punta a punta la conexión a la base y el hash de contraseña. |
-| Frontend: `npm install` y `npm run dev` | ✅ Instala 72 paquetes y compila el build de Vite sin errores. |
+| `git clone` en una carpeta nueva | ✅ El repositorio llega sin `backend/.env`, `venv` ni `node_modules` (los ignora `.gitignore`). |
+| `docker compose up -d` | ✅ Levanta PostgreSQL 16 en el puerto 5432 con un volumen nuevo. |
+| Importar `db/base-de-datos.sql` (PowerShell) | ⚠️→✅ Con el comando anterior (`Get-Content ... \| docker compose exec ...`) importaba sin errores, pero los acentos quedaban dañados: el examen demo aparecía como «Examen demo de opciÃ³n mÃºltiple». Se cambió el README a `docker compose cp` + `psql -f`. Con eso, en una base nueva, quedan las 9 tablas y los 3 exámenes con los acentos correctos. |
+| Copiar los `.env` y generar `SECRET_KEY` | ✅ `Copy-Item` de los dos `.env.example` y `SECRET_KEY` con `secrets.token_hex(32)`. `GEMINI_API_KEY` se dejó **vacía**: el examen demo no la necesita. |
+| Backend: venv + `pip install -r requirements.txt` | ✅ Termina con código 0. `pip` indica `Ignoring uvloop: markers 'sys_platform != "win32"' don't match your environment`, es decir, omite `uvloop` en Windows como dice el README. |
+| `uvicorn app.main:app --reload` | ✅ Arranca en http://127.0.0.1:8000 y `GET /health` responde `{"status":"ok"}`. |
+| Frontend: `npm install` y `npm run dev` | ✅ `added 72 packages`, `found 0 vulnerabilities`; Vite abre en http://localhost:5173 y `npm run build` compila sin errores. |
+| CORS desde el frontend | ✅ Las peticiones con `Origin: http://localhost:5173` reciben `Access-Control-Allow-Origin: http://localhost:5173` (valor por omisión de `CORS_ORIGINS`). |
+| Presentar «Examen demo de opción múltiple (sin IA)» como candidato | ✅ Acceso como candidato nuevo, intento con token, 2 respuestas guardadas y `POST /calificar` → **calificación 10 (2 de 2 correctas)**, retroalimentación «Pregunta 1: Respuesta correcta. / Pregunta 2: Respuesta correcta.». El intento queda en estado `calificado`. |
+| Ver el resultado en Resultados (login `admin@develop.com.mx`) | ✅ `POST /login` devuelve `access_token` y `GET /resultados` incluye el intento de «Candidata Prueba Limpia» con calificación 10. |
 
 Notas de esta prueba:
-- La calificación con IA no se ejecutó porque el `GEMINI_API_KEY` era de relleno (no una clave real de Gemini); sí se verificó el arranque, la base y todo lo demás.
-- Las dos variaciones frente al README (puertos 5433 y 8011) son solo para no interferir con los servicios de desarrollo ya levantados en esta misma máquina.
+- El examen se recorrió con las mismas llamadas a la API, y en el mismo orden, que hacen las pantallas `/presentar`, `/examen/:id` y Resultados (`/candidatos/acceso`, `/intentos`, `/intentos/{id}/respuestas`, `/intentos/{id}/calificar`, `/resultados`), enviando el `Origin` del frontend.
+- La calificación de preguntas abiertas con Gemini no entra en esta prueba: se hizo sin llave, a propósito, para comprobar que el ciclo completo funciona recién instalado usando solo el examen demo.
+- Si se clona en una ruta muy larga, `pip` puede fallar en Windows con `OSError ... Long Path support`. Eso es un límite de Windows (260 caracteres), no del proyecto: se resuelve clonando en una ruta corta, como el Escritorio.
+- La bitácora anterior (28 oct, `e4d7515`) decía que `pip` instalaba «sin errores», pero en Windows ese `requirements.txt` todavía no excluía `uvloop`. Esta bitácora la reemplaza.

@@ -147,7 +147,8 @@ docker compose up -d
 # Linux / macOS
 docker compose exec -T db psql -U eval_user -d eval_tecnica < db/base-de-datos.sql
 # Windows (PowerShell)
-Get-Content db/base-de-datos.sql | docker compose exec -T db psql -U eval_user -d eval_tecnica
+docker compose cp db/base-de-datos.sql db:/tmp/base-de-datos.sql
+docker compose exec -T db psql -U eval_user -d eval_tecnica -f /tmp/base-de-datos.sql
 ```
 
 **2. Configuración**
